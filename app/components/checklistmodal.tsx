@@ -22,21 +22,26 @@ export default function ChecklistModal({ open, handleClose, trade }: ChecklistMo
     const { addAttachmentToTrade } = useTradeStore();
 
 
-    
+
 
     const handleAddAttachment = async () => {
         if (!trade) return;
 
         // 1. فایل را انتخاب کرده و نام جدید آن را از بک‌اند بگیر
         const newAttachmentName = await fileApi.addAttachment(trade.id);
-        
+
         if (newAttachmentName) {
             // 2. نام جدید را به دیتابیس اضافه کن
             await databaseApi.addAttachment(trade.id, newAttachmentName);
-            
+
             // 3. رابط کاربری را آپدیت کن
             addAttachmentToTrade(trade.id, newAttachmentName);
         }
+    };
+
+    const handleOpenAttachment = async (fileName: string) => {
+        if (!trade) return;
+        await fileApi.openAttachment(fileName);
     };
 
 
@@ -82,16 +87,16 @@ export default function ChecklistModal({ open, handleClose, trade }: ChecklistMo
                                 control={control}
                                 defaultValue=""
                                 render={({ field }) => (
-                                    <TextField 
-                                        {...field} 
-                                        label="استراتژی" 
-                                        fullWidth 
+                                    <TextField
+                                        {...field}
+                                        label="استراتژی"
+                                        fullWidth
                                         variant="standard"
                                     />
                                 )}
                             />
                         </Grid>
-                        
+
                         <Grid item xs={12}>
                             <FormControl fullWidth>
                                 <InputLabel>احساس شما هنگام ورود؟</InputLabel>
@@ -173,11 +178,18 @@ export default function ChecklistModal({ open, handleClose, trade }: ChecklistMo
                             />
                         </Grid>
 
-            <Grid item xs={12}>
+                        <Grid item xs={12}>
                             <Typography variant="subtitle2" gutterBottom>ضمیمه‌ها</Typography>
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
                                 {trade?.attachments?.map(att => (
-                                    <Chip key={att} label={att.split('-').pop()} size="small" />
+                                    <Chip
+                                        key={att}
+                                        label={att.split('-').pop()}
+                                        size="small"
+                                        // این خط را اضافه کنید
+                                        onClick={() => handleOpenAttachment(att)}
+                                        sx={{ cursor: 'pointer' }}
+                                    />
                                 ))}
                             </Box>
                             <Button

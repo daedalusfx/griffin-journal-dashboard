@@ -1,6 +1,6 @@
 import { handle } from '@/lib/main/shared';
 import Database from 'better-sqlite3';
-import { app, dialog } from 'electron';
+import { app, dialog, shell } from 'electron';
 import fs from 'fs'; // این خط را اضافه کنید
 import path from 'path'; // این خط را اضافه کنید
 // تابع کمکی برای بررسی وجود جدول
@@ -117,5 +117,19 @@ export const registerFileHandlers = () => {
         return null;
     }
 });
+
+  handle('file-open-attachment', async (fileName: string) => {
+        const attachmentsDir = path.join(app.getPath('userData'), 'attachments');
+        const filePath = path.join(attachmentsDir, fileName);
+
+        try {
+            // فایل را با نرم افزار پیش‌فرض سیستم باز می‌کند
+            await shell.openPath(filePath);
+        } catch (error) {
+            console.error('Failed to open attachment:', error);
+            // می‌توانید یک دیالوگ خطا هم اینجا نمایش دهید
+        }
+    });
+
 }
 

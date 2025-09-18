@@ -28,5 +28,9 @@ export const fileIpcSchema = {
       args: z.tuple([z.number()]), // ID معامله را دریافت می‌کند
       return: z.string().nullable(), // آدرس فایل جدید را برمی‌گرداند
     },
+    'file-open-attachment': {
+      args: z.tuple([z.string()]),
+      return: z.void(),
+    },
 }
 
