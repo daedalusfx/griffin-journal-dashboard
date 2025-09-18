@@ -11,38 +11,41 @@ interface ChecklistModalProps {
     trade: Trade | null;
 }
 
+// تایپ فرم را گسترش می‌دهیم تا استراتژی را هم شامل شود
+type ReviewFormData = TradeChecklist & { tags: string[], strategy: string };
+
 export default function ChecklistModal({ open, handleClose, trade }: ChecklistModalProps) {
-    const { handleSubmit, control, reset, setValue } = useForm<TradeChecklist & { tags: string[] }>();
-    const { updateTradeChecklist, updateTradeTags } = useTradeStore((state) => state);
+    const { handleSubmit, control, reset, setValue } = useForm<ReviewFormData>();
+    const { updateTradeChecklist, updateTradeTags, updateTradeStrategy } = useTradeStore();
     const databaseApi = useConveyor('database');
 
-
-    // هر بار که مودال برای یک معامله جدید باز می‌شود، فرم را با اطلاعات آن پر می‌کند
     useEffect(() => {
-        if (trade && trade.checklist) {
-            setValue('emotion', trade.checklist.emotion || 'نامشخص');
-            setValue('executionScore', trade.checklist.executionScore || 3);
-            setValue('notes', trade.checklist.notes || '');
+        if (trade) {
+            setValue('emotion', trade.checklist?.emotion || 'نامشخص');
+            setValue('executionScore', trade.checklist?.executionScore || 3);
+            setValue('notes', trade.checklist?.notes || '');
             setValue('tags', trade.tags || []);
+            setValue('strategy', trade.strategy || ''); // <-- مقداردهی اولیه استراتژی
         } else {
-            reset({ emotion: 'نامشخص', executionScore: 3, notes: '' });
+            reset({ emotion: 'نامشخص', executionScore: 3, notes: '', tags: [], strategy: '' });
         }
     }, [trade, open, setValue, reset]);
 
-    const onSubmit = async (data: TradeChecklist & { tags: string[] }) => {
+    const onSubmit = async (data: ReviewFormData) => {
         if (trade) {
-            const { tags, ...checklistData } = data;
+            const { tags, strategy, ...checklistData } = data;
             const finalTags = tags || [];
+
             // 1. ذخیره تغییرات در دیتابیس
-            await databaseApi.updateTradeReview(trade.id, checklistData, finalTags);
+            await databaseApi.updateTradeReview(trade.id, checklistData, finalTags, strategy);
 
             // 2. آپدیت رابط کاربری
             updateTradeChecklist(trade.id, checklistData);
             updateTradeTags(trade.id, finalTags);
+            updateTradeStrategy(trade.id, strategy);
         }
         handleClose();
     };
-
 
     if (!trade) return null;
 
@@ -52,6 +55,22 @@ export default function ChecklistModal({ open, handleClose, trade }: ChecklistMo
                 <Typography variant="h6" component="h2" mb={2}>بازبینی معامله: {trade.symbol}</Typography>
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <Grid container spacing={3}>
+                        <Grid item xs={12}>
+                            <Controller
+                                name="strategy"
+                                control={control}
+                                defaultValue=""
+                                render={({ field }) => (
+                                    <TextField 
+                                        {...field} 
+                                        label="استراتژی" 
+                                        fullWidth 
+                                        variant="standard"
+                                    />
+                                )}
+                            />
+                        </Grid>
+                        
                         <Grid item xs={12}>
                             <FormControl fullWidth>
                                 <InputLabel>احساس شما هنگام ورود؟</InputLabel>
@@ -98,40 +117,39 @@ export default function ChecklistModal({ open, handleClose, trade }: ChecklistMo
                                 render={({ field }) => (
                                     <TextField
                                         {...field}
-                                        label="یادداشت و دلایل (چه کاری را درست یا غلط انجام دادید؟)"
+                                        label="یادداشت و دلایل"
                                         fullWidth
                                         multiline
-                                        rows={4}
+                                        rows={3}
                                     />
                                 )}
                             />
-
-                            <Grid item xs={12}>
-                                <Controller
-                                    name="tags"
-                                    control={control}
-                                    defaultValue={[]}
-                                    render={({ field: { onChange, value } }) => (
-                                        <Autocomplete
-                                            multiple
-                                            freeSolo // به کاربر اجازه می‌دهد تگ جدید بسازد
-                                            options={['test tag']} // در آینده می‌توانیم تگ‌های پراستفاده را اینجا بگذاریم
-                                            value={value || []}
-                                            onChange={(event, newValue) => {
-                                                onChange(newValue);
-                                            }}
-                                            renderInput={(params) => (
-                                                <TextField
-                                                    {...params}
-                                                    variant="standard"
-                                                    label="برچسب‌ها"
-                                                    placeholder="یک برچسب تایپ کنید و Enter بزنید"
-                                                />
-                                            )}
-                                        />
-                                    )}
-                                />
-                            </Grid>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Controller
+                                name="tags"
+                                control={control}
+                                defaultValue={[]}
+                                render={({ field: { onChange, value } }) => (
+                                    <Autocomplete
+                                        multiple
+                                        freeSolo
+                                        options={[]}
+                                        value={value || []}
+                                        onChange={(event, newValue) => {
+                                            onChange(newValue);
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                variant="standard"
+                                                label="برچسب‌ها"
+                                                placeholder="یک برچسب تایپ کنید و Enter بزنید"
+                                            />
+                                        )}
+                                    />
+                                )}
+                            />
                         </Grid>
                         <Grid item xs={12}><Button type="submit" variant="contained" color="primary" fullWidth>ذخیره بازبینی</Button></Grid>
                     </Grid>

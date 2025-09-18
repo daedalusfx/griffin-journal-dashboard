@@ -36,7 +36,7 @@ export const databaseIpcSchema = {
     return: z.void(),
   },
   'db-update-trade-review': {
-    args: z.tuple([z.number(), z.any(), z.array(z.string())]),
+    args: z.tuple([z.number(), z.any(), z.array(z.string()), z.string()]), 
     return: z.void(),
   },
   'db-bulk-add-trades': {

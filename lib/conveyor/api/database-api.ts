@@ -5,8 +5,9 @@ export class DatabaseApi extends ConveyorApi {
   loadTrades = () => this.invoke('db-load-trades')
   addTrade = (trade: Omit<Trade, 'id'>) => this.invoke('db-add-trade', trade as any)
   deleteTrade = (id: number) => this.invoke('db-delete-trade', id)
-  updateTradeReview = (id: number, checklist: TradeChecklist, tags: string[]) => 
-    this.invoke('db-update-trade-review', id, checklist, tags)
+updateTradeReview = (id: number, checklist: TradeChecklist, tags: string[], strategy: string) => 
+this.invoke('db-update-trade-review', id, checklist, tags, strategy)
+
   bulkAddTrades = (trades: Trade[]) => this.invoke('db-bulk-add-trades', trades)
 
 }

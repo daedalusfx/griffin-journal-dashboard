@@ -34,6 +34,7 @@ export interface Trade {
     importTrades: (newTrades: Trade[]) => void;
     updateTradeChecklist: (id: number, checklist: TradeChecklist) => void;
     updateTradeTags: (id: number, tags: string[]) => void; 
+    updateTradeStrategy: (id: number, strategy: string) => void;
 }>((set) => ({
     trades: [],
     setTrades: (trades) => set({ trades: trades.map(t => ({...t, entryDate: new Date(t.entryDate), exitDate: new Date(t.exitDate)})) }),
@@ -56,6 +57,11 @@ export interface Trade {
     updateTradeTags: (id, tags) => set(state => ({
         trades: state.trades.map(trade => 
             trade.id === id ? { ...trade, tags } : trade
+        )
+    })),
+    updateTradeStrategy: (id, strategy) => set(state => ({
+        trades: state.trades.map(trade => 
+            trade.id === id ? { ...trade, strategy } : trade
         )
     }))
 }));

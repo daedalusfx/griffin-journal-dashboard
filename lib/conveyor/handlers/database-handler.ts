@@ -87,13 +87,13 @@ export const registerDatabaseHandlers = () => {
         console.log(`[DB] Deleted ${result.changes} rows.`);
     });
 
-    handle('db-update-trade-review', (id, checklist, tags) => {
+    handle('db-update-trade-review', (id, checklist, tags, strategy) => {
         console.log(`[DB] Received request: db-update-trade-review for id: ${id}`);
         const result = db.prepare(`
             UPDATE trades
-            SET checklist = ?, tags = ?
+            SET checklist = ?, tags = ?, strategy = ?
             WHERE id = ?
-        `).run(JSON.stringify(checklist), JSON.stringify(tags), id);
+        `).run(JSON.stringify(checklist), JSON.stringify(tags), strategy, id);
         console.log(`[DB] Updated ${result.changes} rows.`);
     });
     
