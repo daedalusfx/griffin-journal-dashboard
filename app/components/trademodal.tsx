@@ -1,8 +1,9 @@
-import { useTradeStore } from "@/app/utils/store"; // TradeChecklist اضافه شد
-import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Modal, Select, TextField, Typography } from "@mui/material";
+import { useConveyor } from "@/app/hooks/use-conveyor";
+import { useTradeStore } from "@/app/utils/store";
+import { Autocomplete, Box, Button, FormControl, Grid, InputLabel, MenuItem, Modal, Select, TextField, Typography } from "@mui/material";
 import { Controller, useForm } from "react-hook-form";
 
-// کامپوننت فرم بازبینی که بین دو مودال مشترک است
+
 export const ChecklistFields = ({ control }) => (
     <>
         <Grid item xs={12}>
@@ -66,18 +67,38 @@ export const ChecklistFields = ({ control }) => (
 export default function AddTradeModal({ open, handleClose }) { 
     const { handleSubmit, control, reset } = useForm();
     const addTrade = useTradeStore((state) => state.addTrade);
+    const databaseApi = useConveyor('database');
 
-    const onSubmit = (data) => {
+    const onSubmit = async (data) => {
         const pnl = (data.type === 'Buy' ? 1 : -1) * (data.exitPrice - data.entryPrice) * data.volume;
-        // داده‌های چک‌لیست هم به همراه معامله جدید ثبت می‌شود
-        addTrade({ ...data, pnl: parseFloat(pnl) });
+
+        const tradePayload = {
+            ...data,
+            pnl: parseFloat(pnl) || 0,
+            entryDate: new Date().toISOString(),
+            exitDate: new Date().toISOString(),
+            tags: data.tags || [], // FIX: اطمینان از وجود داشتن تگ‌ها
+        };
+
+        const newTradeWithId = await databaseApi.addTrade(tradePayload);
+        
+        // FIX: تبدیل رشته‌های تاریخ بازگشتی به آبجکت Date قبل از اضافه کردن به استور
+        const finalTrade = {
+            ...newTradeWithId,
+            entryDate: new Date(newTradeWithId.entryDate),
+            exitDate: new Date(newTradeWithId.exitDate),
+        };
+        addTrade(finalTrade);
+
         handleClose();
         reset({
             symbol: '', volume: '', entryPrice: '', exitPrice: '', strategy: '',
-            checklist: { emotion: 'نامشخص', executionScore: 3, notes: '' }
+            checklist: { emotion: 'نامشخص', executionScore: 3, notes: '' },
+            tags: []
         });
     };
-    
+
+
     return (
         <Modal open={open} onClose={handleClose}>
             <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 450, bgcolor: 'background.paper', border: '1px solid #444', boxShadow: 24, p: 4, borderRadius: 2 }}>
@@ -91,9 +112,36 @@ export default function AddTradeModal({ open, handleClose }) {
                         <Grid item xs={6}><Controller name="exitPrice" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="قیمت خروج" type="number" fullWidth />} /></Grid>
                         <Grid item xs={12}><Controller name="strategy" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="استراتژی" fullWidth />} /></Grid>
                         
-                        {/* اضافه کردن فیلدهای چک‌لیست */}
                         <Grid item xs={12}><Typography variant="subtitle1" mt={2}>بازبینی اولیه</Typography></Grid>
                         <ChecklistFields control={control} />
+                        
+                        {/* فیلد برچسب‌ها */}
+                        <Grid item xs={12}>
+                            <Controller
+                                name="tags"
+                                control={control}
+                                defaultValue={[]}
+                                render={({ field: { onChange, value } }) => (
+                                    <Autocomplete
+                                        multiple
+                                        freeSolo
+                                        options={[]}
+                                        value={value || []}
+                                        onChange={(event, newValue) => {
+                                            onChange(newValue);
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                variant="standard"
+                                                label="برچسب‌ها"
+                                                placeholder="یک برچسب تایپ کنید و Enter بزنید"
+                                            />
+                                        )}
+                                    />
+                                )}
+                            />
+                        </Grid>
 
                         <Grid item xs={12} mt={2}><Button type="submit" variant="contained" color="primary" fullWidth>ثبت معامله</Button></Grid>
                     </Grid>
@@ -102,3 +150,4 @@ export default function AddTradeModal({ open, handleClose }) {
         </Modal>
     );
 }
+

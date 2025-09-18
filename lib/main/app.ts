@@ -1,10 +1,11 @@
-import { registerAppHandlers } from '@/lib/conveyor/handlers/app-handler'
-import { registerFileHandlers } from '@/lib/conveyor/handlers/file-handler'
-import { registerWindowHandlers } from '@/lib/conveyor/handlers/window-handler'
-import appIcon from '@/resources/build/icon.png?asset'
-import { app, BrowserWindow, shell } from 'electron'
-import { join } from 'path'
-import { registerResourcesProtocol } from './protocols'
+import { registerAppHandlers } from '@/lib/conveyor/handlers/app-handler';
+import { closeDatabase, registerDatabaseHandlers } from '@/lib/conveyor/handlers/database-handler';
+import { registerFileHandlers } from '@/lib/conveyor/handlers/file-handler';
+import { registerWindowHandlers } from '@/lib/conveyor/handlers/window-handler';
+import appIcon from '@/resources/build/icon.png?asset';
+import { app, BrowserWindow, shell } from 'electron';
+import { join } from 'path';
+import { registerResourcesProtocol } from './protocols';
 
 export function createAppWindow(): void {
   // Register custom protocol for resources
@@ -32,7 +33,7 @@ export function createAppWindow(): void {
   registerWindowHandlers(mainWindow)
   registerAppHandlers(app)
   registerFileHandlers() 
-
+  registerDatabaseHandlers(); 
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -51,3 +52,7 @@ export function createAppWindow(): void {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
+
+app.on('before-quit', () => {
+  closeDatabase();
+});

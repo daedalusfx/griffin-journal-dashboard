@@ -1,3 +1,4 @@
+import { useConveyor } from "@/app/hooks/use-conveyor";
 import { Trade, TradeChecklist, useTradeStore } from "@/app/utils/store";
 import { Autocomplete, Box, Button, FormControl, Grid, InputLabel, MenuItem, Modal, Select, TextField, Typography } from "@mui/material";
 
@@ -13,6 +14,7 @@ interface ChecklistModalProps {
 export default function ChecklistModal({ open, handleClose, trade }: ChecklistModalProps) {
     const { handleSubmit, control, reset, setValue } = useForm<TradeChecklist & { tags: string[] }>();
     const { updateTradeChecklist, updateTradeTags } = useTradeStore((state) => state);
+    const databaseApi = useConveyor('database');
 
 
     // هر بار که مودال برای یک معامله جدید باز می‌شود، فرم را با اطلاعات آن پر می‌کند
@@ -27,14 +29,20 @@ export default function ChecklistModal({ open, handleClose, trade }: ChecklistMo
         }
     }, [trade, open, setValue, reset]);
 
-    const onSubmit = (data: TradeChecklist & { tags: string[] }) => {
+    const onSubmit = async (data: TradeChecklist & { tags: string[] }) => {
         if (trade) {
             const { tags, ...checklistData } = data;
+            const finalTags = tags || [];
+            // 1. ذخیره تغییرات در دیتابیس
+            await databaseApi.updateTradeReview(trade.id, checklistData, finalTags);
+
+            // 2. آپدیت رابط کاربری
             updateTradeChecklist(trade.id, checklistData);
-            updateTradeTags(trade.id, tags || []); 
+            updateTradeTags(trade.id, finalTags);
         }
         handleClose();
     };
+
 
     if (!trade) return null;
 

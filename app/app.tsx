@@ -4,7 +4,7 @@ import {
     TableCell, TableContainer, TablePagination, TableRow, ThemeProvider, Typography
 } from '@mui/material'; // Chip اضافه شد
 import { format } from 'date-fns';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import ChecklistModal from '@/app/components/checklistmodal'; // مودال جدید
 import DashboardStats from '@/app/components/dashboardstate';
@@ -31,8 +31,9 @@ const darkTheme = createTheme({
 
 export default function App() {
     const [addModalOpen, setAddModalOpen] = useState(false);
-    const { trades, deleteTrade, importTrades } = useTradeStore();
+    const { trades, setTrades, addTrade, deleteTrade, importTrades, updateTradeReview } = useTradeStore();
     const fileApi = useConveyor('file');
+    const databaseApi = useConveyor('database');
     const [order, setOrder] = useState('desc');
     const [orderBy, setOrderBy] = useState('entryDate');
     const [page, setPage] = useState(0);
@@ -52,10 +53,15 @@ export default function App() {
     };
 
 
-    const handleImportClick = async () => { 
-        const newTrades = await fileApi.readTradesFromDb();
-        if (newTrades && newTrades.length > 0) {
-            importTrades(newTrades as any);
+    const handleImportClick = async () => {
+        // ۱. خواندن معاملات از فایل متاتریدر
+        const importedTrades = await fileApi.readTradesFromDb();
+        if (importedTrades && importedTrades.length > 0) {
+            // ۲. ارسال معاملات خوانده شده به بک‌اند برای ذخیره‌سازی دسته‌جمعی
+            const allTradesFromDb = await databaseApi.bulkAddTrades(importedTrades);
+    
+            // ۳. به‌روزرسانی کامل رابط کاربری با لیست جدید از دیتابیس
+            setTrades(allTradesFromDb);
         }
     };
 
@@ -70,7 +76,28 @@ export default function App() {
         setPage(0);
     };
 
+    const handleDeleteTrade = async (id: number) => {
+        await databaseApi.deleteTrade(id); // 1. حذف از دیتابیس
+        deleteTrade(id);                  // 2. حذف از رابط کاربری (store)
+    };
+    
+
     const sortedTrades = useMemo(() => stableSort(trades, getComparator(order, orderBy)), [trades, order, orderBy]);
+
+useEffect(() => {
+    const loadInitialData = async () => {
+        console.log("Loading initial trades from database...");
+        const initialTrades = await databaseApi.loadTrades();
+        setTrades(initialTrades);
+        console.log(`${initialTrades.length} trades loaded.`);
+    };
+    // اطمینان حاصل می‌کنیم که conveyor آماده است
+    if (window.conveyor) {
+       loadInitialData();
+    }
+}, [databaseApi, setTrades]);
+
+
 
     return (
         <ThemeProvider theme={darkTheme}>
@@ -132,7 +159,7 @@ export default function App() {
 
                                         <TableCell>
                                             <IconButton size="small"><Edit fontSize="inherit" /></IconButton>
-                                            <IconButton size="small" onClick={() => deleteTrade(row.id)}><Delete fontSize="inherit" /></IconButton>
+                                            <IconButton size="small" onClick={() => handleDeleteTrade(row.id)}><Delete fontSize="inherit" /></IconButton>
                                         </TableCell>
                                     </TableRow>
                                 ))}

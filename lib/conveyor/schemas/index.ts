@@ -1,7 +1,8 @@
-import { z } from 'zod'
-import { appIpcSchema } from './app-schema'
-import { fileIpcSchema } from './file-schema'; // <-- اضافه شد
-import { windowIpcSchema } from './window-schema'
+import { z } from 'zod';
+import { appIpcSchema } from './app-schema';
+import { databaseIpcSchema } from './database-schema';
+import { fileIpcSchema } from './file-schema';
+import { windowIpcSchema } from './window-schema';
 
 
 // Define all IPC channel schemas in one place
@@ -9,6 +10,7 @@ export const ipcSchemas = {
   ...windowIpcSchema,
   ...appIpcSchema,
   ...fileIpcSchema, 
+  ...databaseIpcSchema,
 } as const
 
 // Extract types from Zod schemas

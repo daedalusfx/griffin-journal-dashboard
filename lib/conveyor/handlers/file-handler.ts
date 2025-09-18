@@ -28,26 +28,17 @@ export const registerFileHandlers = () => {
       let rows: any[];
 
       if (tableExists(db, 'TRADES')) {
-        // حالت اول: جدول TRADES وجود دارد (حساب هجینگ)
         console.log("TRADES table found. Reading directly.");
         const stmt = db.prepare('SELECT * FROM TRADES');
         rows = stmt.all();
       } else if (tableExists(db, 'DEALS')) {
-        // حالت دوم: فقط جدول DEALS وجود دارد (حساب نتینگ)
         console.log("TRADES table not found. Constructing trades from DEALS.");
         const query = `
           SELECT 
-             d1.POSITION_ID as TICKET,
-             d1.SYMBOL,
-             d1.TYPE,
-             d1.VOLUME,
-             d2.PROFIT,
-             d1.TIME as TIME_IN,
-             d2.TIME as TIME_OUT,
-             d1.COMMISSION + d2.COMMISSION as COMMISSION,
-             d2.SWAP,
-             d1.PRICE as PRICE_IN,
-             d2.PRICE as PRICE_OUT
+             d1.POSITION_ID as TICKET, d1.SYMBOL, d1.TYPE, d1.VOLUME, d2.PROFIT,
+             d1.TIME as TIME_IN, d2.TIME as TIME_OUT,
+             d1.COMMISSION + d2.COMMISSION as COMMISSION, d2.SWAP,
+             d1.PRICE as PRICE_IN, d2.PRICE as PRICE_OUT
           FROM DEALS d1
           INNER JOIN DEALS d2 ON d1.POSITION_ID = d2.POSITION_ID
           WHERE d1.ENTRY = 0 AND d2.ENTRY = 1
@@ -55,19 +46,18 @@ export const registerFileHandlers = () => {
         const stmt = db.prepare(query);
         rows = stmt.all();
       } else {
-        // هیچکدام از جدول‌های مورد نیاز وجود ندارند
         throw new Error("Neither TRADES nor DEALS table found in the database.");
       }
 
-      // تبدیل داده‌های خام به فرمت مورد نیاز رابط کاربری
+      // FIX: تبدیل تاریخ‌ها به رشته ISO قبل از ارسال به رابط کاربری
       const trades = rows.map((row: any) => ({
         id: row.TICKET,
         symbol: row.SYMBOL,
         type: row.TYPE === 0 ? 'Buy' : 'Sell',
         volume: row.VOLUME,
         pnl: row.PROFIT,
-        entryDate: new Date(row.TIME_IN * 1000),
-        exitDate: new Date(row.TIME_OUT * 1000),
+        entryDate: new Date(row.TIME_IN * 1000).toISOString(),
+        exitDate: new Date(row.TIME_OUT * 1000).toISOString(),
         commission: row.COMMISSION,
         swap: row.SWAP,
         entryPrice: row.PRICE_IN,
