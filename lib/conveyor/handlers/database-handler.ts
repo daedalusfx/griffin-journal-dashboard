@@ -6,7 +6,7 @@ import path from 'path';
 const dbPath = path.join(app.getPath('userData'), 'journal.sqlite');
 let db: Database.Database;
 
-// تابع جدید برای بستن امن دیتابیس
+// تابع برای بستن امن دیتابیس
 export function closeDatabase() {
     if (db) {
         db.close();
@@ -17,9 +17,11 @@ export function closeDatabase() {
 function initDatabase() {
     db = new Database(dbPath);
     db.pragma('journal_mode = WAL');
+
+    // ساختار صحیح و کامل جدول
     db.exec(`
         CREATE TABLE IF NOT EXISTS trades (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER PRIMARY KEY,
             symbol TEXT NOT NULL,
             type TEXT NOT NULL,
             volume REAL NOT NULL,
@@ -27,8 +29,12 @@ function initDatabase() {
             entryDate TEXT NOT NULL,
             exitDate TEXT NOT NULL,
             strategy TEXT,
-            checklist TEXT, -- JSON string
-            tags TEXT -- JSON string
+            checklist TEXT,
+            tags TEXT,
+            commission REAL,
+            swap REAL,
+            entryPrice REAL,
+            exitPrice REAL
         );
     `);
     console.log(`Database initialized at: ${dbPath}`);
@@ -54,18 +60,20 @@ export const registerDatabaseHandlers = () => {
     handle('db-add-trade', (trade) => {
         console.log('[DB] Received request: db-add-trade with data:', trade);
         const stmt = db.prepare(`
-            INSERT INTO trades (symbol, type, volume, pnl, entryDate, exitDate, strategy, checklist, tags)
-            VALUES (@symbol, @type, @volume, @pnl, @entryDate, @exitDate, @strategy, @checklist, @tags)
+            INSERT INTO trades (symbol, type, volume, pnl, entryDate, exitDate, strategy, checklist, tags, commission, swap, entryPrice, exitPrice)
+            VALUES (@symbol, @type, @volume, @pnl, @entryDate, @exitDate, @strategy, @checklist, @tags, @commission, @swap, @entryPrice, @exitPrice)
         `);
         const result = stmt.run({
             ...trade,
             checklist: JSON.stringify(trade.checklist || null),
             tags: JSON.stringify(trade.tags || []),
+            commission: trade.commission || 0,
+            swap: trade.swap || 0,
+            entryPrice: trade.entryPrice || 0,
+            exitPrice: trade.exitPrice || 0,
         });
         
-        console.log(`[DB] Inserted trade with lastInsertRowid: ${result.lastInsertRowid}`);
         const newTrade = db.prepare('SELECT * FROM trades WHERE id = ?').get(result.lastInsertRowid);
-        console.log('[DB] Returning new trade:', newTrade);
         return {
              ...newTrade,
              checklist: newTrade.checklist ? JSON.parse(newTrade.checklist) : null,
@@ -88,18 +96,18 @@ export const registerDatabaseHandlers = () => {
         `).run(JSON.stringify(checklist), JSON.stringify(tags), id);
         console.log(`[DB] Updated ${result.changes} rows.`);
     });
+    
     handle('db-bulk-add-trades', (trades) => {
         console.log(`[DB] Received request: db-bulk-add-trades with ${trades.length} trades.`);
         const stmt = db.prepare(`
             INSERT INTO trades (id, symbol, type, volume, pnl, entryDate, exitDate, strategy, commission, swap, entryPrice, exitPrice)
             VALUES (@id, @symbol, @type, @volume, @pnl, @entryDate, @exitDate, @strategy, @commission, @swap, @entryPrice, @exitPrice)
-            ON CONFLICT(id) DO NOTHING
+            ON CONFLICT(id) DO UPDATE SET
+                pnl=excluded.pnl, exitDate=excluded.exitDate, commission=excluded.commission, swap=excluded.swap
         `);
     
-        // استفاده از transaction برای سرعت بسیار بالاتر در ورود دسته‌جمعی
         const insertMany = db.transaction((items) => {
             for (const item of items) {
-                // تاریخ‌ها باید رشته‌ای باشند
                 const payload = {
                     ...item,
                     entryDate: new Date(item.entryDate).toISOString(),
@@ -110,9 +118,8 @@ export const registerDatabaseHandlers = () => {
         });
     
         insertMany(trades);
-        console.log('[DB] Bulk insert completed.');
+        console.log('[DB] Bulk insert/update completed.');
     
-        // بعد از ورود، لیست کامل و به‌روز شده را برمی‌گردانیم
         const allTrades = db.prepare('SELECT * FROM trades ORDER BY entryDate DESC').all();
         return allTrades.map((row: any) => ({
             ...row,
@@ -121,3 +128,4 @@ export const registerDatabaseHandlers = () => {
         }));
     });
 }
+
