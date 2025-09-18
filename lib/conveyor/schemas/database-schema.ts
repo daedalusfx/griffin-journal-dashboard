@@ -48,4 +48,8 @@ export const databaseIpcSchema = {
     args: z.tuple([z.number(), z.string()]), // tradeId, attachmentName
     return: z.void(),
   },
+  'db-update-trade': {
+    args: z.tuple([tradeSchema]), // یک آبجکت کامل معامله را دریافت می‌کند
+    return: tradeSchema,          // معامله آپدیت شده را برمی‌گرداند
+  },
 }

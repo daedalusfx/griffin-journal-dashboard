@@ -1,6 +1,7 @@
 import { useConveyor } from "@/app/hooks/use-conveyor";
 import { useTradeStore } from "@/app/utils/store";
 import { Autocomplete, Box, Button, FormControl, Grid, InputLabel, MenuItem, Modal, Select, TextField, Typography } from "@mui/material";
+import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 
@@ -64,45 +65,69 @@ export const ChecklistFields = ({ control }) => (
 );
 
 
-export default function AddTradeModal({ open, handleClose }) { 
-    const { handleSubmit, control, reset } = useForm();
+export default function AddTradeModal({ open, handleClose,tradeToEdit }) { 
+    const { handleSubmit, control, reset } = useForm();     
     const addTrade = useTradeStore((state) => state.addTrade);
+const updateTrade = useTradeStore((state) => state.updateTrade);
     const databaseApi = useConveyor('database');
+    const isEditMode = !!tradeToEdit;
 
     const onSubmit = async (data) => {
         const pnl = (data.type === 'Buy' ? 1 : -1) * (data.exitPrice - data.entryPrice) * data.volume;
-
-        const tradePayload = {
-            ...data,
-            pnl: parseFloat(pnl) || 0,
-            entryDate: new Date().toISOString(),
-            exitDate: new Date().toISOString(),
-            tags: data.tags || [], // FIX: اطمینان از وجود داشتن تگ‌ها
-        };
-
-        const newTradeWithId = await databaseApi.addTrade(tradePayload);
         
-        // FIX: تبدیل رشته‌های تاریخ بازگشتی به آبجکت Date قبل از اضافه کردن به استور
-        const finalTrade = {
-            ...newTradeWithId,
-            entryDate: new Date(newTradeWithId.entryDate),
-            exitDate: new Date(newTradeWithId.exitDate),
-        };
-        addTrade(finalTrade);
-
+        if (isEditMode) {
+            const tradePayload = {
+                ...tradeToEdit,
+                ...data,
+                pnl: parseFloat(pnl) || 0,
+                tags: data.tags || [],
+            };
+            const updatedTradeFromDb = await databaseApi.updateTrade(tradePayload);
+            updateTrade(updatedTradeFromDb);
+        } else {
+            const tradePayload = {
+                ...data,
+                pnl: parseFloat(pnl) || 0,
+                entryDate: new Date().toISOString(),
+                exitDate: new Date().toISOString(),
+                tags: data.tags || [],
+            };
+            const newTradeWithId = await databaseApi.addTrade(tradePayload);
+            addTrade(newTradeWithId);
+        }
+ 
         handleClose();
-        reset({
-            symbol: '', volume: '', entryPrice: '', exitPrice: '', strategy: '',
-            checklist: { emotion: 'نامشخص', executionScore: 3, notes: '' },
-            tags: []
-        });
     };
 
+    useEffect(() => {
+        if (open) { 
+            if (isEditMode) {
+                reset({
+                    symbol: tradeToEdit.symbol,
+                    type: tradeToEdit.type,
+                    volume: tradeToEdit.volume,
+                    entryPrice: tradeToEdit.entryPrice,
+                    exitPrice: tradeToEdit.exitPrice,
+                    strategy: tradeToEdit.strategy,
+                    checklist: tradeToEdit.checklist || { emotion: 'نامشخص', executionScore: 3, notes: '' },
+                    tags: tradeToEdit.tags || []
+                });
+            } else {
+                reset({
+                    symbol: '', volume: '', entryPrice: '', exitPrice: '', strategy: '',
+                    checklist: { emotion: 'نامشخص', executionScore: 3, notes: '' },
+                    tags: []
+                });
+            }
+        }
+    }, [tradeToEdit, open]); 
 
     return (
         <Modal open={open} onClose={handleClose}>
             <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 450, bgcolor: 'background.paper', border: '1px solid #444', boxShadow: 24, p: 4, borderRadius: 2 }}>
-                <Typography variant="h6" component="h2" mb={2}>ثبت معامله جدید</Typography>
+                <Typography variant="h6" component="h2" mb={2}>
+                    {isEditMode ? `ویرایش معامله: ${tradeToEdit.symbol}` : 'ثبت معامله جدید'}
+                </Typography>
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <Grid container spacing={2}>
                         <Grid item xs={12}><Controller name="symbol" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="نماد (Symbol)" fullWidth />} /></Grid>
@@ -143,7 +168,11 @@ export default function AddTradeModal({ open, handleClose }) {
                             />
                         </Grid>
 
-                        <Grid item xs={12} mt={2}><Button type="submit" variant="contained" color="primary" fullWidth>ثبت معامله</Button></Grid>
+                        <Grid item xs={12} mt={2}>
+                            <Button type="submit" variant="contained" color="primary" fullWidth>
+                               {isEditMode ? 'ذخیره تغییرات' : 'ثبت معامله'}
+                           </Button>
+                            </Grid>
                     </Grid>
                 </form>
             </Box>

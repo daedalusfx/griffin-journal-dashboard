@@ -31,7 +31,8 @@ const darkTheme = createTheme({
 
 export default function App() {
     const [addModalOpen, setAddModalOpen] = useState(false);
-    const { trades, setTrades, addTrade, deleteTrade, importTrades, updateTradeReview } = useTradeStore();
+    const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+    const { trades, setTrades, addTrade, deleteTrade, importTrades ,updateTrade} = useTradeStore();
     const fileApi = useConveyor('file');
     const databaseApi = useConveyor('database');
     const [order, setOrder] = useState('desc');
@@ -42,6 +43,17 @@ export default function App() {
     const [checklistModalOpen, setChecklistModalOpen] = useState(false);
     const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
 
+
+        const handleOpenAddModal = () => {
+            setEditingTrade(null); // اطمینان از اینکه در حالت افزودن هستیم
+            setAddModalOpen(true);
+        };
+    
+        const handleOpenEditModal = (trade: Trade) => {
+            setEditingTrade(trade);
+            setAddModalOpen(true);
+        };
+    
     const handleOpenChecklistModal = (trade: Trade) => {
         setSelectedTrade(trade);
         setChecklistModalOpen(true);
@@ -109,7 +121,7 @@ useEffect(() => {
                         <Button variant="outlined" startIcon={<UploadFile />} onClick={handleImportClick}>
                             بارگذاری از متاتریدر 5
                         </Button>
-                        <Button variant="contained" startIcon={<AddCircleOutline />} onClick={() => setAddModalOpen(true)}>
+                        <Button variant="contained" startIcon={<AddCircleOutline />} onClick={handleOpenAddModal}>
                             ثبت معامله جدید
                         </Button>
                     </Box>
@@ -158,7 +170,7 @@ useEffect(() => {
 </TableCell>
 
                                         <TableCell>
-                                            <IconButton size="small"><Edit fontSize="inherit" /></IconButton>
+                                            <IconButton size="small" onClick={() => handleOpenEditModal(row)}><Edit fontSize="inherit" /></IconButton>
                                             <IconButton size="small" onClick={() => handleDeleteTrade(row.id)}><Delete fontSize="inherit" /></IconButton>
                                         </TableCell>
                                     </TableRow>
@@ -173,7 +185,11 @@ useEffect(() => {
                     />
                 </Paper>
                 
-                <AddTradeModal open={addModalOpen} handleClose={() => setAddModalOpen(false)} />
+                <AddTradeModal 
+                    open={addModalOpen} 
+                    handleClose={() => setAddModalOpen(false)} 
+                    tradeToEdit={editingTrade} 
+                />
                 <ChecklistModal open={checklistModalOpen} handleClose={handleCloseChecklistModal} trade={selectedTrade} />
 
             </Container>

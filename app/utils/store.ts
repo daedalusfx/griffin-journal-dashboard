@@ -31,6 +31,7 @@ export interface Trade {
     trades: Trade[];
     setTrades: (trades: Trade[]) => void; 
     addTrade: (trade: Trade) => void; // <-- تغییر تایپ ورودی
+    updateTrade: (trade: Trade) => void; 
     deleteTrade: (id: number) => void;
     importTrades: (newTrades: Trade[]) => void;
     updateTradeChecklist: (id: number, checklist: TradeChecklist) => void;
@@ -44,6 +45,15 @@ export interface Trade {
     // FIX: حالا معامله‌ای که از دیتابیس می‌آید را مستقیم اضافه می‌کند
     addTrade: (trade) => set((state) => ({
         trades: [trade, ...state.trades]
+    })),
+    updateTrade: (updatedTrade) => set((state) => ({
+        trades: state.trades.map((trade) =>
+            trade.id === updatedTrade.id ? {
+                ...updatedTrade,
+                entryDate: new Date(updatedTrade.entryDate), // اطمینان از اینکه تاریخ‌ها آبجکت Date باقی می‌مانند
+                exitDate: new Date(updatedTrade.exitDate),
+            } : trade
+        ),
     })),
     deleteTrade: (id) => set((state) => ({
         trades: state.trades.filter((trade) => trade.id !== id)

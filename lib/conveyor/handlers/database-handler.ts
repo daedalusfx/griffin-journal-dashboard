@@ -160,5 +160,41 @@ export const registerDatabaseHandlers = () => {
             db.prepare('UPDATE trades SET attachments = ? WHERE id = ?').run(JSON.stringify(attachments), tradeId);
         }
     });
+    handle('db-update-trade', (trade) => {
+        console.log(`[DB] Received request: db-update-trade for id: ${trade.id}`);
+        const stmt = db.prepare(`
+            UPDATE trades
+            SET
+                symbol = @symbol,
+                type = @type,
+                volume = @volume,
+                pnl = @pnl,
+                entryDate = @entryDate,
+                exitDate = @exitDate,
+                strategy = @strategy,
+                checklist = @checklist,
+                tags = @tags,
+                commission = @commission,
+                swap = @swap,
+                entryPrice = @entryPrice,
+                exitPrice = @exitPrice
+            WHERE id = @id
+        `);
+
+        const result = stmt.run({
+            ...trade,
+            checklist: JSON.stringify(trade.checklist || null),
+            tags: JSON.stringify(trade.tags || []),
+        });
+        console.log(`[DB] Updated ${result.changes} rows.`);
+
+        const updatedTrade = db.prepare('SELECT * FROM trades WHERE id = ?').get(trade.id);
+        return {
+             ...updatedTrade,
+             checklist: updatedTrade.checklist ? JSON.parse(updatedTrade.checklist) : null,
+             tags: updatedTrade.tags ? JSON.parse(updatedTrade.tags) : [],
+             attachments: updatedTrade.attachments ? JSON.parse(updatedTrade.attachments) : [],
+        };
+    });
 }
 
