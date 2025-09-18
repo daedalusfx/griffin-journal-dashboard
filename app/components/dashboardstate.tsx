@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useTradeStore } from "../utils/store";
 import EmotionPerformanceChart from "./EmotionPerformanceChart";
 import ScorePerformanceChart from "./ScorePerformanceChart";
+import StrategyPerformanceChart from "./StrategyPerformanceChart";
 import TagPerformanceChart from "./TagPerformanceChart";
 
 // کامپوننت کمکی برای مدیریت محتوای هر تب
@@ -58,7 +59,8 @@ export default function AnalyticsDashboard() {
                     <Tab label="نمای کلی" />
                     <Tab label="تحلیل احساسات" />
                     <Tab label="تحلیل عملکرد اجرایی" />
-                    <Tab label="تحلیل برچسب‌ها" /> 
+                    <Tab label="تحلیل برچسب‌ها" />
+                    <Tab label="تحلیل استراتژی" /> 
                 </Tabs>
             </Box>
             <TabPanel value={activeTab} index={0}>
@@ -71,8 +73,11 @@ export default function AnalyticsDashboard() {
                 <ScorePerformanceChart />
             </TabPanel>
             <TabPanel value={activeTab} index={3}>
-    <TagPerformanceChart />
-</TabPanel>
+                <TagPerformanceChart />
+            </TabPanel>
+            <TabPanel value={activeTab} index={4}>
+                <StrategyPerformanceChart />
+            </TabPanel>
         </Paper>
     );
 }
