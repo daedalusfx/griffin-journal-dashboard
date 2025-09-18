@@ -1,5 +1,6 @@
 import { Trade, TradeChecklist, useTradeStore } from "@/app/utils/store";
-import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Modal, Select, TextField, Typography } from "@mui/material";
+import { Autocomplete, Box, Button, FormControl, Grid, InputLabel, MenuItem, Modal, Select, TextField, Typography } from "@mui/material";
+
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -10,8 +11,9 @@ interface ChecklistModalProps {
 }
 
 export default function ChecklistModal({ open, handleClose, trade }: ChecklistModalProps) {
-    const { handleSubmit, control, reset, setValue } = useForm<TradeChecklist>();
-    const updateTradeChecklist = useTradeStore((state) => state.updateTradeChecklist);
+    const { handleSubmit, control, reset, setValue } = useForm<TradeChecklist & { tags: string[] }>();
+    const { updateTradeChecklist, updateTradeTags } = useTradeStore((state) => state);
+
 
     // هر بار که مودال برای یک معامله جدید باز می‌شود، فرم را با اطلاعات آن پر می‌کند
     useEffect(() => {
@@ -19,14 +21,17 @@ export default function ChecklistModal({ open, handleClose, trade }: ChecklistMo
             setValue('emotion', trade.checklist.emotion || 'نامشخص');
             setValue('executionScore', trade.checklist.executionScore || 3);
             setValue('notes', trade.checklist.notes || '');
+            setValue('tags', trade.tags || []);
         } else {
             reset({ emotion: 'نامشخص', executionScore: 3, notes: '' });
         }
     }, [trade, open, setValue, reset]);
 
-    const onSubmit = (data: TradeChecklist) => {
+    const onSubmit = (data: TradeChecklist & { tags: string[] }) => {
         if (trade) {
-            updateTradeChecklist(trade.id, data);
+            const { tags, ...checklistData } = data;
+            updateTradeChecklist(trade.id, checklistData);
+            updateTradeTags(trade.id, tags || []); 
         }
         handleClose();
     };
@@ -78,20 +83,47 @@ export default function ChecklistModal({ open, handleClose, trade }: ChecklistMo
                             </FormControl>
                         </Grid>
                         <Grid item xs={12}>
-                             <Controller
+                            <Controller
                                 name="notes"
                                 control={control}
                                 defaultValue=""
                                 render={({ field }) => (
-                                    <TextField 
-                                        {...field} 
-                                        label="یادداشت و دلایل (چه کاری را درست یا غلط انجام دادید؟)" 
-                                        fullWidth 
+                                    <TextField
+                                        {...field}
+                                        label="یادداشت و دلایل (چه کاری را درست یا غلط انجام دادید؟)"
+                                        fullWidth
                                         multiline
                                         rows={4}
                                     />
                                 )}
                             />
+
+                            <Grid item xs={12}>
+                                <Controller
+                                    name="tags"
+                                    control={control}
+                                    defaultValue={[]}
+                                    render={({ field: { onChange, value } }) => (
+                                        <Autocomplete
+                                            multiple
+                                            freeSolo // به کاربر اجازه می‌دهد تگ جدید بسازد
+                                            options={['test tag']} // در آینده می‌توانیم تگ‌های پراستفاده را اینجا بگذاریم
+                                            value={value || []}
+                                            onChange={(event, newValue) => {
+                                                onChange(newValue);
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    variant="standard"
+                                                    label="برچسب‌ها"
+                                                    placeholder="یک برچسب تایپ کنید و Enter بزنید"
+                                                />
+                                            )}
+                                        />
+                                    )}
+                                />
+                            </Grid>
                         </Grid>
                         <Grid item xs={12}><Button type="submit" variant="contained" color="primary" fullWidth>ذخیره بازبینی</Button></Grid>
                     </Grid>

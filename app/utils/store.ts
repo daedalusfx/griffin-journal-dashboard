@@ -21,7 +21,8 @@ export interface Trade {
   entryPrice?: number;
   exitPrice?: number;
   strategy?: string;
-  checklist?: TradeChecklist; // فیلد جدید برای چک‌لیست
+  checklist?: TradeChecklist; 
+  tags?: string[];
 }
 
 
@@ -37,7 +38,8 @@ const initialTrades: Trade[] = [
     deleteTrade: (id: number) => void;
     importTrades: (newTrades: Trade[]) => void;
     updateTradeChecklist: (id: number, checklist: TradeChecklist) => void; // تابع جدید
- }>((set) => ({
+    updateTradeTags: (id: number, tags: string[]) => void; 
+}>((set) => ({
     trades: initialTrades,
     addTrade: (trade) => set((state) => ({
         trades: [...state.trades, { ...trade, id: Date.now(), entryDate: new Date(), exitDate: new Date() }]
@@ -52,6 +54,11 @@ const initialTrades: Trade[] = [
     updateTradeChecklist: (id, checklist) => set(state => ({
         trades: state.trades.map(trade => 
             trade.id === id ? { ...trade, checklist } : trade
+        )
+    })),
+    updateTradeTags: (id, tags) => set(state => ({
+        trades: state.trades.map(trade => 
+            trade.id === id ? { ...trade, tags } : trade
         )
     }))
 }));

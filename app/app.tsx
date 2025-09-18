@@ -121,6 +121,15 @@ export default function App() {
                                                 </IconButton>
                                             )}
                                         </TableCell>
+
+                                        <TableCell sx={{ maxWidth: 200 }}>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+        {row.tags?.map(tag => (
+            <Chip key={tag} label={tag} size="small" />
+        ))}
+    </Box>
+</TableCell>
+
                                         <TableCell>
                                             <IconButton size="small"><Edit fontSize="inherit" /></IconButton>
                                             <IconButton size="small" onClick={() => deleteTrade(row.id)}><Delete fontSize="inherit" /></IconButton>

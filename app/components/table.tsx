@@ -6,6 +6,7 @@ import { TableCell, TableHead, TableRow, TableSortLabel } from "@mui/material";
     { id: 'strategy', label: 'استراتژی' },
     { id: 'checklist', label: 'بازبینی' }, // ستون جدید
     { id: 'actions', label: 'عملیات' },
+    { id: 'tags', label: 'برچسب‌ها' }
   ];
   function EnhancedTableHead(props) {
     const { order, orderBy, onRequestSort } = props;
