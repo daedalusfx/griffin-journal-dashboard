@@ -20,6 +20,7 @@ const tradeSchema = z.object({
         notes: z.string().optional(),
     }).nullable().optional(), // <--- تغییر در این خط
     tags: z.array(z.string()).optional(),
+    attachments: z.array(z.string()).optional().nullable(),
 });
 
 export const databaseIpcSchema = {
@@ -42,5 +43,9 @@ export const databaseIpcSchema = {
   'db-bulk-add-trades': {
     args: z.tuple([z.array(tradeSchema)]),
     return: z.array(tradeSchema),
+  },
+  'db-add-attachment': {
+    args: z.tuple([z.number(), z.string()]), // tradeId, attachmentName
+    return: z.void(),
   },
 }

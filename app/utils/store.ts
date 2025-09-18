@@ -23,6 +23,7 @@ export interface Trade {
   strategy?: string;
   checklist?: TradeChecklist; 
   tags?: string[];
+  attachments?: string[]; 
 }
 
 
@@ -35,6 +36,8 @@ export interface Trade {
     updateTradeChecklist: (id: number, checklist: TradeChecklist) => void;
     updateTradeTags: (id: number, tags: string[]) => void; 
     updateTradeStrategy: (id: number, strategy: string) => void;
+    addAttachmentToTrade: (id: number, attachmentPath: string) => void;
+
 }>((set) => ({
     trades: [],
     setTrades: (trades) => set({ trades: trades.map(t => ({...t, entryDate: new Date(t.entryDate), exitDate: new Date(t.exitDate)})) }),
@@ -62,6 +65,13 @@ export interface Trade {
     updateTradeStrategy: (id, strategy) => set(state => ({
         trades: state.trades.map(trade => 
             trade.id === id ? { ...trade, strategy } : trade
+        )
+    })),
+    addAttachmentToTrade: (id, attachmentPath) => set(state => ({
+        trades: state.trades.map(trade => 
+            trade.id === id 
+            ? { ...trade, attachments: [...(trade.attachments || []), attachmentPath] } 
+            : trade
         )
     }))
 }));

@@ -14,6 +14,8 @@ const tradeSchema = z.object({
   entryPrice: z.number(),
   exitPrice: z.number(),
   strategy: z.string(),
+  attachments: z.array(z.string()).optional().nullable(),
+
 })
 
 export const fileIpcSchema = {
@@ -22,5 +24,9 @@ export const fileIpcSchema = {
     // در پاسخ، آرایه‌ای از معاملات یا null برمی‌گرداند
     return: z.array(tradeSchema).nullable(),
   },
+    'file-add-attachment': {
+      args: z.tuple([z.number()]), // ID معامله را دریافت می‌کند
+      return: z.string().nullable(), // آدرس فایل جدید را برمی‌گرداند
+    },
 }
 

@@ -1,7 +1,7 @@
 import { useConveyor } from "@/app/hooks/use-conveyor";
 import { Trade, TradeChecklist, useTradeStore } from "@/app/utils/store";
-import { Autocomplete, Box, Button, FormControl, Grid, InputLabel, MenuItem, Modal, Select, TextField, Typography } from "@mui/material";
-
+import { Attachment } from "@mui/icons-material";
+import { Autocomplete, Box, Button, Chip, FormControl, Grid, InputLabel, MenuItem, Modal, Select, TextField, Typography } from "@mui/material";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -18,6 +18,27 @@ export default function ChecklistModal({ open, handleClose, trade }: ChecklistMo
     const { handleSubmit, control, reset, setValue } = useForm<ReviewFormData>();
     const { updateTradeChecklist, updateTradeTags, updateTradeStrategy } = useTradeStore();
     const databaseApi = useConveyor('database');
+    const fileApi = useConveyor('file');
+    const { addAttachmentToTrade } = useTradeStore();
+
+
+    
+
+    const handleAddAttachment = async () => {
+        if (!trade) return;
+
+        // 1. فایل را انتخاب کرده و نام جدید آن را از بک‌اند بگیر
+        const newAttachmentName = await fileApi.addAttachment(trade.id);
+        
+        if (newAttachmentName) {
+            // 2. نام جدید را به دیتابیس اضافه کن
+            await databaseApi.addAttachment(trade.id, newAttachmentName);
+            
+            // 3. رابط کاربری را آپدیت کن
+            addAttachmentToTrade(trade.id, newAttachmentName);
+        }
+    };
+
 
     useEffect(() => {
         if (trade) {
@@ -151,6 +172,25 @@ export default function ChecklistModal({ open, handleClose, trade }: ChecklistMo
                                 )}
                             />
                         </Grid>
+
+            <Grid item xs={12}>
+                            <Typography variant="subtitle2" gutterBottom>ضمیمه‌ها</Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                                {trade?.attachments?.map(att => (
+                                    <Chip key={att} label={att.split('-').pop()} size="small" />
+                                ))}
+                            </Box>
+                            <Button
+                                variant="outlined"
+                                startIcon={<Attachment />}
+                                onClick={handleAddAttachment}
+                                fullWidth
+                            >
+                                افزودن عکس یا ویدیو
+                            </Button>
+                        </Grid>
+
+
                         <Grid item xs={12}><Button type="submit" variant="contained" color="primary" fullWidth>ذخیره بازبینی</Button></Grid>
                     </Grid>
                 </form>

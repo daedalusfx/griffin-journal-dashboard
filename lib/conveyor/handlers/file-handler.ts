@@ -1,7 +1,8 @@
 import { handle } from '@/lib/main/shared';
 import Database from 'better-sqlite3';
-import { dialog } from 'electron';
-
+import { app, dialog } from 'electron';
+import fs from 'fs'; // این خط را اضافه کنید
+import path from 'path'; // این خط را اضافه کنید
 // تابع کمکی برای بررسی وجود جدول
 function tableExists(db: Database.Database, tableName: string): boolean {
   const stmt = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?");
@@ -75,6 +76,46 @@ export const registerFileHandlers = () => {
             db.close();
         }
     }
-  })
+  });
+  handle('file-add-attachment', async (tradeId: number) => {
+    if (!tradeId) {
+        console.error('Attachment cannot be added without a tradeId.');
+        return null;
+    }
+
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        title: 'انتخاب فایل ضمیمه',
+        buttonLabel: 'ضمیمه کن',
+    });
+
+    if (canceled || filePaths.length === 0) {
+        return null;
+    }
+
+    const selectedFilePath = filePaths[0];
+    const attachmentsDir = path.join(app.getPath('userData'), 'attachments');
+
+    // اگر پوشه ضمیمه‌ها وجود ندارد، آن را بساز
+    if (!fs.existsSync(attachmentsDir)) {
+        fs.mkdirSync(attachmentsDir);
+    }
+
+    // یک نام منحصر به فرد برای فایل جدید بساز
+    const newFileName = `${tradeId}-${Date.now()}-${path.basename(selectedFilePath)}`;
+    const newFilePath = path.join(attachmentsDir, newFileName);
+
+    try {
+        // فایل انتخاب شده را به پوشه ضمیمه‌ها کپی کن
+        fs.copyFileSync(selectedFilePath, newFilePath);
+        console.log(`Attachment copied to: ${newFilePath}`);
+        // نام جدید فایل را برگردان تا در دیتابیس ذخیره شود
+        return newFileName;
+    } catch (error) {
+        console.error('Failed to copy attachment file:', error);
+        dialog.showErrorBox('خطا در ضمیمه کردن فایل', `مشکلی در کپی کردن فایل به وجود آمد: \n\n${error.message}`);
+        return null;
+    }
+});
 }
 
