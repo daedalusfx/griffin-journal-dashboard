@@ -1,9 +1,11 @@
-import { TableHead, TableRow, TableCell, TableSortLabel } from "@mui/material";
+import { TableCell, TableHead, TableRow, TableSortLabel } from "@mui/material";
 
   const headCells = [
     { id: 'symbol', label: 'نماد' }, { id: 'type', label: 'نوع' }, { id: 'entryDate', label: 'تاریخ ورود' },
     { id: 'exitDate', label: 'تاریخ خروج' }, { id: 'volume', label: 'حجم', numeric: true }, { id: 'pnl', label: 'سود / زیان', numeric: true },
-    { id: 'strategy', label: 'استراتژی' }, { id: 'actions', label: 'عملیات' },
+    { id: 'strategy', label: 'استراتژی' },
+    { id: 'checklist', label: 'بازبینی' }, // ستون جدید
+    { id: 'actions', label: 'عملیات' },
   ];
   function EnhancedTableHead(props) {
     const { order, orderBy, onRequestSort } = props;
