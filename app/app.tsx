@@ -1,30 +1,32 @@
-import { AddCircleOutline, Delete, Edit } from '@mui/icons-material';
+import { AddCircleOutline, Delete, Edit, UploadFile } from '@mui/icons-material';
 import {
-  Box,
-  Button,
-  Container,
-  createTheme,
-  CssBaseline,
-  IconButton,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TablePagination,
-  TableRow,
-  ThemeProvider,
-  Typography
+    Box,
+    Button,
+    Container,
+    createTheme,
+    CssBaseline,
+    IconButton,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TablePagination,
+    TableRow,
+    ThemeProvider,
+    Typography
 } from '@mui/material';
 import { format } from 'date-fns';
 import { useMemo, useState } from 'react';
+
+// تصحیح شد: استفاده از مسیرهای نسبی برای حل خطای شناسایی
 import DashboardStats from './components/dashboardstate';
 import EquityCurveChart from './components/equitycurvechart';
 import EnhancedTableHead from './components/table';
 import AddTradeModal from './components/trademodal';
+import { useConveyor } from './hooks/use-conveyor';
 import { useTradeStore } from './utils/store';
 import { getComparator, stableSort } from './utils/tablelogic';
-
 
 // --- THEME CONFIGURATION ---
 const darkTheme = createTheme({
@@ -40,21 +42,24 @@ const darkTheme = createTheme({
     },
 });
 
-
-
-
-
-
 // --- MAIN APP COMPONENT ---
 export default function App() {
     const [modalOpen, setModalOpen] = useState(false);
-    const trades = useTradeStore((state) => state.trades);
-    const deleteTrade = useTradeStore((state) => state.deleteTrade);
-    
+    const { trades, deleteTrade, importTrades } = useTradeStore();
+    const fileApi = useConveyor('file');
+
     const [order, setOrder] = useState('desc');
     const [orderBy, setOrderBy] = useState('entryDate');
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+
+    const handleImportClick = async () => {
+        // فراخوانی متد جدید برای خواندن از دیتابیس
+        const newTrades = await fileApi.readTradesFromDb();
+        if (newTrades && newTrades.length > 0) {
+            importTrades(newTrades);
+        }
+    };
 
     const handleRequestSort = (event, property) => {
         const isAsc = orderBy === property && order === 'asc';
@@ -74,13 +79,20 @@ export default function App() {
         <ThemeProvider theme={darkTheme}>
             <CssBaseline />
             <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
                     <Typography variant="h4" component="h1">ژورنال معاملاتی</Typography>
-                    <Button variant="contained" startIcon={<AddCircleOutline />} onClick={() => setModalOpen(true)}>ثبت معامله جدید</Button>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                        {/* متن دکمه به‌روز شد */}
+                        <Button variant="outlined" startIcon={<UploadFile />} onClick={handleImportClick}>
+                            بارگذاری از متاتریدر 5
+                        </Button>
+                        <Button variant="contained" startIcon={<AddCircleOutline />} onClick={() => setModalOpen(true)}>
+                            ثبت معامله جدید
+                        </Button>
+                    </Box>
                 </Box>
 
                 <DashboardStats />
-                
                 <EquityCurveChart />
 
                 <Paper sx={{ width: '100%', mb: 2, backgroundColor: '#1e1e1e', border: '1px solid #333' }}>
@@ -91,9 +103,9 @@ export default function App() {
                                 {sortedTrades.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
                                     <TableRow hover key={row.id}>
                                         <TableCell>{row.symbol}</TableCell>
-                                        <TableCell><Typography color={row.type === 'Buy' ? 'success.main' : 'error.main'}>{row.type === 'Buy' ? 'خرید' : 'فروش'}</Typography></TableCell>
-                                        <TableCell>{format(new Date(row.entryDate), 'yyyy/MM/dd HH:mm')}</TableCell>
-                                        <TableCell>{format(new Date(row.exitDate), 'yyyy/MM/dd HH:mm')}</TableCell>
+                                        <TableCell><Typography color={row.type === 'Buy' ? 'success.main' : 'error.main'}>{row.type}</Typography></TableCell>
+                                        <TableCell>{row.entryDate && !isNaN(new Date(row.entryDate)) ? format(new Date(row.entryDate), 'yyyy/MM/dd HH:mm') : 'N/A'}</TableCell>
+                                        <TableCell>{row.exitDate && !isNaN(new Date(row.exitDate)) ? format(new Date(row.exitDate), 'yyyy/MM/dd HH:mm') : 'N/A'}</TableCell>
                                         <TableCell align="right">{row.volume}</TableCell>
                                         <TableCell align="right"><Typography color={row.pnl >= 0 ? 'success.main' : 'error.main'} sx={{ fontWeight: 'bold' }}>${row.pnl.toFixed(2)}</Typography></TableCell>
                                         <TableCell>{row.strategy}</TableCell>

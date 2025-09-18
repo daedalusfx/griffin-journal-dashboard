@@ -17,6 +17,10 @@ const initialTrades = [
     deleteTrade: (id) => set((state) => ({
         trades: state.trades.filter((trade) => trade.id !== id)
     })),
+    // تابع جدید برای وارد کردن چندین معامله
+    importTrades: (newTrades) => set(state => ({
+        trades: [...state.trades, ...newTrades]
+    }))
 }));
 
-export { initialTrades, useTradeStore };
+export { useTradeStore };
