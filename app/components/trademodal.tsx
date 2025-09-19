@@ -1,7 +1,7 @@
 import { useConveyor } from "@/app/hooks/use-conveyor";
 import { useTradeStore } from "@/app/utils/store";
-import { Autocomplete, Box, Button, FormControl, Grid, InputLabel, MenuItem, Modal, Select, TextField, Typography } from "@mui/material";
-import { useEffect } from "react";
+import { Autocomplete, Box, Button, Chip, FormControl, Grid, InputLabel, MenuItem, Modal, Select, TextField, Typography } from "@mui/material";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 
@@ -70,6 +70,13 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
     const addTrade = useTradeStore((state) => state.addTrade);
     const updateTrade = useTradeStore((state) => state.updateTrade);
     const databaseApi = useConveyor('database');
+    const [autocompleteOptions, setAutocompleteOptions] = useState({
+        symbol: [],
+        strategy: [],
+        timeframe: [],
+        riskRewardRatio: [],
+        tags: [], 
+    });
     const isEditMode = !!tradeToEdit;
     // In app/components/trademodal.tsx
 
@@ -105,6 +112,22 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
 
     useEffect(() => {
         if (open) {
+            Promise.all([
+                databaseApi.getUniqueFieldValues('symbol'),
+                databaseApi.getUniqueFieldValues('strategy'),
+                databaseApi.getUniqueFieldValues('timeframe'),
+                databaseApi.getUniqueFieldValues('riskRewardRatio'),
+                databaseApi.getUniqueTags(), // <-- Fetching unique tags
+            ]).then(([symbols, strategies, timeframes, rrs, tags]) => {
+                setAutocompleteOptions({
+                    symbol: symbols,
+                    strategy: strategies,
+                    timeframe: timeframes,
+                    riskRewardRatio: rrs,
+                    tags: tags,
+                });
+            }).catch(err => console.error("Failed to fetch autocomplete options:", err));
+       
             if (isEditMode) {
                 reset({
                     symbol: tradeToEdit.symbol,
@@ -146,19 +169,45 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
                     <Grid container spacing={2} sx={{ display: 'flex', flexDirection: 'row',alignItems:'flex-start',alignContent:'center',justifyContent:'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-                            <Grid item xs={12}><Controller name="symbol" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="نماد (Symbol)" fullWidth />} /></Grid>
+                            <Grid item xs={12}>
+                                
+             <Controller name="symbol" control={control} defaultValue="" render={({ field: { onChange, value } }) => (
+                                    <Autocomplete freeSolo options={autocompleteOptions.symbol} value={value || ''} onChange={(e, val) => onChange(val)}
+                                        renderInput={(params) => <TextField {...params} label="نماد (Symbol)" fullWidth />}
+                                    />
+                                )}/>
+                                
+                                </Grid>
                             <Grid item xs={6}><FormControl fullWidth><InputLabel>نوع</InputLabel><Controller name="type" control={control} defaultValue="Buy" render={({ field }) => (<Select {...field} label="نوع"><MenuItem value="Buy">خرید (Buy)</MenuItem><MenuItem value="Sell">فروش (Sell)</MenuItem></Select>)} /></FormControl></Grid>
                             <Grid item xs={6}><Controller name="volume" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="حجم (Volume)" type="number" fullWidth />} /></Grid>
                             <Grid item xs={6}><Controller name="entryPrice" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="قیمت ورود" type="number" fullWidth />} /></Grid>
                             <Grid item xs={6}><Controller name="exitPrice" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="قیمت خروج" type="number" fullWidth />} /></Grid>
-                            <Grid item xs={12}><Controller name="strategy" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="استراتژی" fullWidth />} /></Grid>
+                            <Grid item xs={12}>
+                                     <Controller name="strategy" control={control} defaultValue="" render={({ field: { onChange, value } }) => (
+                                                                 <Autocomplete freeSolo options={autocompleteOptions.strategy} value={value || ''} onChange={(e, val) => onChange(val)}
+                                                                     renderInput={(params) => <TextField {...params} label="استراتژی" fullWidth />}
+                                                                 />
+                                                             )}/>
+                                
+                                </Grid>
                         </div>
 
 
                         <Grid item xs={12} md={4} sx={{width:'20%'}}>
                             <Typography variant="subtitle1" mt={2}>جزئیات تکمیلی</Typography>
-                            <Controller name="riskRewardRatio" control={control} render={({ field }) => <TextField {...field} label="نسبت ریسک به ریوارد" fullWidth margin="normal" />} />
-                            <Controller name="timeframe" control={control} render={({ field }) => <TextField {...field} label="تایم فریم" fullWidth margin="normal" />} />
+
+
+                                 <Controller name="riskRewardRatio" control={control} defaultValue="" render={({ field: { onChange, value } }) => (
+                                     <Autocomplete freeSolo options={autocompleteOptions.riskRewardRatio} value={value || ''} onChange={(e, val) => onChange(val)}
+                                        renderInput={(params) => <TextField {...params} label="نسبت ریسک به ریوارد" fullWidth />}
+                                    />
+                                )}/>
+                            <Controller name="timeframe" control={control} defaultValue="" render={({ field: { onChange, value } }) => (
+                                     <Autocomplete freeSolo options={autocompleteOptions.timeframe} value={value || ''} onChange={(e, val) => onChange(val)}
+                                        renderInput={(params) => <TextField {...params} label="تایم فریم" fullWidth />}
+                                    />
+                                )}/>
+                            
                             <FormControl fullWidth margin="normal">
                                 <InputLabel>نوع حساب</InputLabel>
                                 <Controller name="accountType" control={control} defaultValue="Real" render={({ field }) => (
@@ -193,30 +242,34 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
                         <div style={{ width: "15%" }}>
 
                             <Grid item xs={12}>
-                                <Controller
-                                    name="tags"
-                                    control={control}
-                                    defaultValue={[]}
-                                    render={({ field: { onChange, value } }) => (
-                                        <Autocomplete
-                                            multiple
-                                            freeSolo
-                                            options={[]}
-                                            value={value || []}
-                                            onChange={(event, newValue) => {
-                                                onChange(newValue);
-                                            }}
-                                            renderInput={(params) => (
-                                                <TextField
-                                                    {...params}
-                                                    variant="standard"
-                                                    label="برچسب‌ها"
-                                                    placeholder="یک برچسب تایپ کنید و Enter بزنید"
-                                                />
-                                            )}
-                                        />
-                                    )}
-                                />
+                          <Controller
+                                   name="tags"
+                                                     control={control}
+                                                     defaultValue={[]}
+                                                     render={({ field: { onChange, value } }) => (
+                                                         <Autocomplete
+                                                             multiple
+                                                             freeSolo
+                                                             options={autocompleteOptions.tags} // <-- Use fetched tags
+                                                             value={value || []}
+                                                             onChange={(event, newValue) => {
+                                                                 onChange(newValue);
+                                                             }}
+                                                             renderTags={(value, getTagProps) =>
+                                                                 value.map((option, index) => (
+                                                                     <Chip variant="outlined" label={option} {...getTagProps({ index })} />
+                                                                 ))
+                                                             }
+                                                             renderInput={(params) => (
+                                                                 <TextField
+                                                                     {...params}
+                                                                     label="برچسب‌ها"
+                                                                     placeholder="افزودن برچسب..."
+                                                                 />
+                                                             )}
+                                                         />
+                                                     )}
+                                                 />
                             </Grid>
                         </div>
 

@@ -216,4 +216,38 @@ export const registerDatabaseHandlers = () => {
         `);
         stmt.run(logData);
     });
+
+
+handle('db-get-unique-field-values', (fieldName: string) => {
+    // WARNING: This is safe only for known column names to prevent SQL injection.
+    const allowedFields = ['strategy', 'symbol', 'timeframe', 'accountType', 'outcome','riskRewardRatio'];
+    if (!allowedFields.includes(fieldName)) {
+        throw new Error(`Invalid field name for unique value query: ${fieldName}`);
+    }
+
+    // The following is safe because fieldName is checked against a whitelist.
+    const stmt = db.prepare(`SELECT DISTINCT ${fieldName} FROM trades WHERE ${fieldName} IS NOT NULL AND ${fieldName} != ''`);
+    const rows = stmt.all();
+    return rows.map(row => row[fieldName]);
+});
+
+
+handle('db-get-unique-tags', () => {
+    const stmt = db.prepare(`SELECT tags FROM trades WHERE tags IS NOT NULL AND tags != '[]'`);
+    const rows = stmt.all();
+    const allTags = new Set<string>();
+
+    rows.forEach(row => {
+        try {
+            const tags = JSON.parse(row.tags);
+            if (Array.isArray(tags)) {
+                tags.forEach(tag => allTags.add(tag));
+            }
+        } catch (e) {
+            // Ignore parsing errors for malformed data
+        }
+    });
+
+    return Array.from(allTags); // تبدیل Set به Array برای ارسال
+});
 }

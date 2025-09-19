@@ -77,4 +77,12 @@ export const databaseIpcSchema = {
     args: z.tuple([dailyLogSchema]),
     return: z.void(),
   },
+  'db-get-unique-field-values': {
+    args: z.tuple([z.string()]), // ورودی: نام فیلد (e.g., 'strategy')
+    return: z.array(z.string()),   // خروجی: آرایه‌ای از مقادیر منحصر به فرد
+  },
+  'db-get-unique-tags': {
+    args: z.tuple([]), // ورودی ندارد
+    return: z.array(z.string()), // خروجی: آرایه‌ای از تمام برچسب‌های منحصر به فرد
+  },
 }
