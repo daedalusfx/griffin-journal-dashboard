@@ -1,15 +1,29 @@
 import { Box, Paper, Typography } from "@mui/material";
+import { format } from 'date-fns-tz';
 import { useMemo } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useTradeStore } from "../utils/store";
 
-// تابع برای تشخیص سشن معاملاتی بر اساس ساعت UTC
+// تابع جدید و دقیق برای تشخیص سشن معاملاتی
 const getTradingSession = (date: Date) => {
-    const hour = date.getUTCHours();
-    // تعریف بازه‌های زمانی برای هر سشن (به وقت UTC)
-    if (hour >= 22 || hour < 7) return 'سشن آسیا'; // 22:00 - 06:59 UTC
-    if (hour >= 7 && hour < 13) return 'سشن لندن'; // 07:00 - 12:59 UTC
-    if (hour >= 13 && hour < 21) return 'سشن نیویورک'; // 13:00 - 20:59 UTC
+    const tradeDate = new Date(date);
+
+    // گرفتن ساعت معامله به وقت محلی هر بازار مالی
+    const londonHour = parseInt(format(tradeDate, 'H', { timeZone: 'Europe/London' }));
+    const newYorkHour = parseInt(format(tradeDate, 'H', { timeZone: 'America/New_York' }));
+    const tokyoHour = parseInt(format(tradeDate, 'H', { timeZone: 'Asia/Tokyo' }));
+
+    // تعریف ساعات کاری محلی (این ساعت‌ها با DST تغییر نمی‌کنند)
+    const isLondonOpen = londonHour >= 8 && londonHour < 17; // 8:00 AM - 4:59 PM به وقت لندن
+    const isNewYorkOpen = newYorkHour >= 9 && newYorkHour < 17; // 9:00 AM - 4:59 PM به وقت نیویورک
+    const isTokyoOpen = tokyoHour >= 9 && tokyoHour < 15;   // 9:00 AM - 2:59 PM به وقت توکیو
+
+    // بررسی همپوشانی‌ها (مهم‌ترین زمان بازار) و سشن‌های اصلی
+    if (isLondonOpen && isNewYorkOpen) return 'همپوشانی لندن و نیویورک';
+    if (isNewYorkOpen) return 'سشن نیویورک';
+    if (isLondonOpen) return 'سشن لندن';
+    if (isTokyoOpen) return 'سشن آسیا';
+
     return 'خارج از سشن اصلی';
 };
 
@@ -46,7 +60,7 @@ export default function SessionPerformanceChart() {
             return acc;
         }, {});
         
-        const sessionOrder = ['سشن آسیا', 'سشن لندن', 'سشن نیویورک', 'خارج از سشن اصلی'];
+        const sessionOrder = ['سشن آسیا', 'سشن لندن', 'همپوشانی لندن و نیویورک', 'سشن نیویورک', 'خارج از سشن اصلی'];
 
         return Object.entries(sessionStats).map(([session, stats]) => ({
             name: session,
