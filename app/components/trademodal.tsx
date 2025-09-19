@@ -3,7 +3,7 @@ import { useTradeStore } from "@/app/utils/store";
 import { Autocomplete, Box, Button, Chip, FormControl, Grid, InputLabel, MenuItem, Modal, Select, TextField, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-
+import toast from 'react-hot-toast';
 
 export const ChecklistFields = ({ control }) => (
     <>
@@ -94,6 +94,8 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
             };
             const updatedTradeFromDb = await databaseApi.updateTrade(tradePayload);
             updateTrade(updatedTradeFromDb);
+            toast.success('معامله با موفقیت ویرایش شد.');
+
         } else {
             const pnl = (data.type === 'Buy' ? 1 : -1) * (data.exitPrice - data.entryPrice) * data.volume;
             const tradePayload = {
@@ -106,6 +108,8 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
             };
             const newTradeWithId = await databaseApi.addTrade(tradePayload);
             addTrade(newTradeWithId);
+            toast.success('معامله جدید با موفقیت ثبت شد.');
+
         }
         handleClose();
     };

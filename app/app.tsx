@@ -14,6 +14,7 @@ import AddTradeModal from '@/app/components/trademodal';
 import { useConveyor } from '@/app/hooks/use-conveyor';
 import { Trade, useTradeStore } from '@/app/utils/store';
 import { getComparator, stableSort } from '@/app/utils/tablelogic';
+import toast from 'react-hot-toast';
 import DailyLogModal from './components/DailyLogModal';
 
 const darkTheme = createTheme({
@@ -80,10 +81,20 @@ export default function App() {
     };
 
     const handleImportClick = async () => {
+        const loadingToast = toast.loading('در حال بارگذاری معاملات...');
+
         const importedTrades = await fileApi.readTradesFromDb();
+
+        toast.dismiss(loadingToast); 
+
         if (importedTrades && importedTrades.length > 0) {
             const allTradesFromDb = await databaseApi.bulkAddTrades(importedTrades);
             setTrades(allTradesFromDb);
+            toast.success(`${importedTrades.length} معامله با موفقیت بارگذاری شد!`);
+
+        }else{
+            toast.error('هیچ معامله جدیدی برای بارگذاری یافت نشد.');
+
         }
     };
 
@@ -101,6 +112,8 @@ export default function App() {
     const handleDeleteTrade = async (id: number) => {
         await databaseApi.deleteTrade(id);
         deleteTrade(id);
+        toast.success('معامله با موفقیت حذف شد.');
+
     };
 
     const sortedTrades = useMemo(() => stableSort(filteredTrades, getComparator(order, orderBy)), [filteredTrades, order, orderBy]);
