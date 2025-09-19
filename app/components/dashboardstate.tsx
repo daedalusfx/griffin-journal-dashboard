@@ -1,5 +1,6 @@
 import { Box, Card, CardContent, Grid, Paper, Tab, Tabs, Typography } from "@mui/material";
 import { useMemo, useState } from "react";
+import AiAnalystPage from "./AiAnalystPage";
 import DayOfWeekPerformanceChart from "./DayOfWeekPerformanceChart";
 import EmotionPerformanceChart from "./EmotionPerformanceChart";
 import ScorePerformanceChart from "./ScorePerformanceChart";
@@ -64,6 +65,8 @@ export default function AnalyticsDashboard({trades}) {
                     <Tab label="تحلیل نمادها" />
                     <Tab label="تحلیل روز هفته" />
                     <Tab label="تحلیل سشن معاملاتی" />
+                    <Tab label="تحلیل  هوشمند" />
+
 
                 </Tabs>
             </Box>
@@ -90,6 +93,10 @@ export default function AnalyticsDashboard({trades}) {
             </TabPanel>
             <TabPanel value={activeTab} index={7}>
                 <SessionPerformanceChart />
+            </TabPanel>
+            <TabPanel value={activeTab} index={8}>
+
+            <AiAnalystPage/>
             </TabPanel>
         </Paper>
     );
