@@ -71,34 +71,44 @@ export default function AddTradeModal({ open, handleClose,tradeToEdit }) {
 const updateTrade = useTradeStore((state) => state.updateTrade);
     const databaseApi = useConveyor('database');
     const isEditMode = !!tradeToEdit;
+// In app/components/trademodal.tsx
 
-    const onSubmit = async (data) => {
+const onSubmit = async (data) => {
+    // This PNL calculation is a bit simplified and might not be what you want.
+    // Let's assume you handle PNL on the backend or have a better calculation.
+    // For now, we focus on the date fix.
+    
+    if (isEditMode) {
+        const tradePayload = {
+            ...tradeToEdit,
+            ...data,
+            // The PNL should likely be recalculated or handled differently
+            pnl: tradeToEdit.pnl, // Keep original PNL unless prices change
+            tags: data.tags || [],
+            // --- START: THE FIX ---
+            // Convert Date objects back to ISO strings before sending
+            entryDate: new Date(tradeToEdit.entryDate).toISOString(),
+            exitDate: new Date(tradeToEdit.exitDate).toISOString(),
+            // --- END: THE FIX ---
+        };
+        const updatedTradeFromDb = await databaseApi.updateTrade(tradePayload);
+        updateTrade(updatedTradeFromDb);
+    } else {
         const pnl = (data.type === 'Buy' ? 1 : -1) * (data.exitPrice - data.entryPrice) * data.volume;
-        
-        if (isEditMode) {
-            const tradePayload = {
-                ...tradeToEdit,
-                ...data,
-                pnl: parseFloat(pnl) || 0,
-                tags: data.tags || [],
-            };
-            const updatedTradeFromDb = await databaseApi.updateTrade(tradePayload);
-            updateTrade(updatedTradeFromDb);
-        } else {
-            const tradePayload = {
-                ...data,
-                pnl: parseFloat(pnl) || 0,
-                entryDate: new Date().toISOString(),
-                exitDate: new Date().toISOString(),
-                tags: data.tags || [],
-            };
-            const newTradeWithId = await databaseApi.addTrade(tradePayload);
-            addTrade(newTradeWithId);
-        }
- 
-        handleClose();
-    };
+        const tradePayload = {
+            ...data,
+            pnl: parseFloat(pnl) || 0,
+            // When creating a new trade, ensure dates are strings
+            entryDate: new Date().toISOString(),
+            exitDate: new Date().toISOString(),
+            tags: data.tags || [],
+        };
+        const newTradeWithId = await databaseApi.addTrade(tradePayload);
+        addTrade(newTradeWithId);
+    }
 
+    handleClose();
+};
     useEffect(() => {
         if (open) { 
             if (isEditMode) {

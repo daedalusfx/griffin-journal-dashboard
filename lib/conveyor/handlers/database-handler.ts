@@ -18,7 +18,6 @@ function initDatabase() {
     db = new Database(dbPath);
     db.pragma('journal_mode = WAL');
 
-    // FIX: اضافه کردن ستون attachments
     db.exec(`
         CREATE TABLE IF NOT EXISTS trades (
             id INTEGER PRIMARY KEY,
@@ -35,6 +34,28 @@ function initDatabase() {
             swap REAL,
             entryPrice REAL,
             exitPrice REAL
+        );
+    `);
+
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS daily_log (
+            date TEXT PRIMARY KEY,                       -- تاریخ 'YYYY-MM-DD'
+    
+            -- === مرحله ۱: آمادگی قبل از بازار ===
+            pre_market_focus INTEGER,                    -- میزان تمرکز قبل از شروع (۱ تا ۵)
+            pre_market_preparation INTEGER,              -- میزان آمادگی و تحلیل (۱ تا ۵)
+            mindfulness_state TEXT,                      -- وضعیت ذهنی (مثلا: آرام، مضطرب، هیجان‌زده)
+    
+            -- === مرحله ۲: نظم و انضباط در حین بازار ===
+            adherence_to_rules INTEGER,                  -- پایبندی به قوانین استراتژی (۱ تا ۵)
+            impulsive_trades_count INTEGER,              -- تعداد معاملات هیجانی/خارج از برنامه
+            hesitation_on_entry INTEGER,                 -- میزان تردید در ورود (۱=کم, ۵=زیاد)
+            premature_exit_count INTEGER,                -- تعداد خروج‌های زودهنگام (به دلیل ترس)
+    
+            -- === مرحله ۳: بازبینی و ریکاوری بعد از بازار ===
+            post_market_review_quality INTEGER,          -- کیفیت بازبینی معاملات (۱ تا ۵)
+            emotional_state_after TEXT,                  -- وضعیت احساسی در پایان روز (مثلا: راضی، خشمگین، بی‌تفاوت)
+            daily_lesson_learned TEXT                    -- مهم‌ترین درسی که امروز یاد گرفتم
         );
     `);
 
@@ -196,5 +217,25 @@ export const registerDatabaseHandlers = () => {
              attachments: updatedTrade.attachments ? JSON.parse(updatedTrade.attachments) : [],
         };
     });
+
+handle('db-save-daily-log', (logData) => {
+    console.log(`[DB] Saving daily log for date: ${logData.date}`);
+    const stmt = db.prepare(`
+        INSERT INTO daily_log (date, pre_market_focus, pre_market_preparation, mindfulness_state, adherence_to_rules, impulsive_trades_count, hesitation_on_entry, premature_exit_count, post_market_review_quality, emotional_state_after, daily_lesson_learned)
+        VALUES (@date, @pre_market_focus, @pre_market_preparation, @mindfulness_state, @adherence_to_rules, @impulsive_trades_count, @hesitation_on_entry, @premature_exit_count, @post_market_review_quality, @emotional_state_after, @daily_lesson_learned)
+        ON CONFLICT(date) DO UPDATE SET
+            pre_market_focus = excluded.pre_market_focus,
+            pre_market_preparation = excluded.pre_market_preparation,
+            mindfulness_state = excluded.mindfulness_state,
+            adherence_to_rules = excluded.adherence_to_rules,
+            impulsive_trades_count = excluded.impulsive_trades_count,
+            hesitation_on_entry = excluded.hesitation_on_entry,
+            premature_exit_count = excluded.premature_exit_count,
+            post_market_review_quality = excluded.post_market_review_quality,
+            emotional_state_after = excluded.emotional_state_after,
+            daily_lesson_learned = excluded.daily_lesson_learned
+    `);
+    stmt.run(logData);
+});
 }
 

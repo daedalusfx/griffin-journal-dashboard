@@ -23,6 +23,23 @@ const tradeSchema = z.object({
     attachments: z.array(z.string()).optional().nullable(),
 });
 
+
+const dailyLogSchema = z.object({
+  date: z.string(),
+  pre_market_focus: z.number(),
+  pre_market_preparation: z.number(),
+  mindfulness_state: z.string(),
+  adherence_to_rules: z.number(),
+  impulsive_trades_count: z.number(),
+  hesitation_on_entry: z.number(),
+  premature_exit_count: z.number(),
+  post_market_review_quality: z.number(),
+  emotional_state_after: z.string(),
+  daily_lesson_learned: z.string(),
+});
+
+
+
 export const databaseIpcSchema = {
   'db-load-trades': {
     args: z.tuple([]),
@@ -52,4 +69,9 @@ export const databaseIpcSchema = {
     args: z.tuple([tradeSchema]), // یک آبجکت کامل معامله را دریافت می‌کند
     return: tradeSchema,          // معامله آپدیت شده را برمی‌گرداند
   },
+  'db-save-daily-log': {
+    args: z.tuple([dailyLogSchema]),
+    return: z.void(),
+},
+
 }

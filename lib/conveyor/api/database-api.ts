@@ -11,5 +11,6 @@ this.invoke('db-update-trade-review', id, checklist, tags, strategy)
 
   bulkAddTrades = (trades: Trade[]) => this.invoke('db-bulk-add-trades', trades)
   addAttachment = (tradeId: number, attachmentName: string) => this.invoke('db-add-attachment', tradeId, attachmentName)
+  saveDailyLog = (logData: any) => this.invoke('db-save-daily-log', logData);
 
 }

@@ -1,4 +1,4 @@
-import { AddCircleOutline, Delete, Edit, RateReview, UploadFile } from '@mui/icons-material';
+import { AddCircleOutline, Delete, Edit, EventNote, RateReview, UploadFile } from '@mui/icons-material';
 import {
     Autocomplete, Box, Button, Chip, Container, createTheme, CssBaseline, IconButton, Paper, Table, TableBody,
     TableCell, TableContainer, TablePagination, TableRow, TextField, ThemeProvider, Typography
@@ -14,6 +14,7 @@ import AddTradeModal from '@/app/components/trademodal';
 import { useConveyor } from '@/app/hooks/use-conveyor';
 import { Trade, useTradeStore } from '@/app/utils/store';
 import { getComparator, stableSort } from '@/app/utils/tablelogic';
+import DailyLogModal from './components/DailyLogModal';
 
 const darkTheme = createTheme({
     palette: {
@@ -41,6 +42,8 @@ export default function App() {
     const [checklistModalOpen, setChecklistModalOpen] = useState(false);
     const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
     const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
+    const [dailyLogModalOpen, setDailyLogModalOpen] = useState(false); 
+
 
     // فیلتر کردن معاملات بر اساس نماد انتخاب شده
     const filteredTrades = useMemo(() => {
@@ -134,6 +137,9 @@ export default function App() {
                         <Button variant="outlined" startIcon={<UploadFile />} onClick={handleImportClick}>
                             بارگذاری از متاتریدر 5
                         </Button>
+                        <Button variant="outlined" color="secondary" startIcon={<EventNote />} onClick={() => setDailyLogModalOpen(true)}>
+                            ثبت گزارش روز
+                        </Button>
                         <Button variant="contained" startIcon={<AddCircleOutline />} onClick={handleOpenAddModal}>
                             ثبت معامله جدید
                         </Button>
@@ -202,6 +208,7 @@ export default function App() {
                     tradeToEdit={editingTrade}
                 />
                 <ChecklistModal open={checklistModalOpen} handleClose={handleCloseChecklistModal} trade={selectedTrade} />
+                <DailyLogModal open={dailyLogModalOpen} handleClose={() => setDailyLogModalOpen(false)} />
 
             </Container>
         </ThemeProvider>
