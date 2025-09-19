@@ -255,10 +255,13 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
                                             onChange={(event, newValue) => {
                                                 onChange(newValue);
                                             }}
-                                            renderTags={(value, getTagProps) =>
-                                                value.map((option, index) => (
-                                                    <Chip variant="outlined" label={option} {...getTagProps({ index })} />
-                                                ))
+                                            renderTags={(tagValue, getTagProps) =>
+                                                tagValue.map((option, index) => {
+                                                    // ۱. استخراج key از بقیه props
+                                                    const { key, ...chipProps } = getTagProps({ index });
+                                                    // ۲. ارسال مستقیم key به Chip و spread کردن بقیه props
+                                                    return <Chip key={key} variant="outlined" label={option} {...chipProps} />;
+                                                })
                                             }
                                             renderInput={(params) => (
                                                 <TextField
