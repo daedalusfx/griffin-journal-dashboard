@@ -1,9 +1,10 @@
 import { Box, Card, CardContent, Grid, Paper, Tab, Tabs, Typography } from "@mui/material";
 import { useMemo, useState } from "react";
-import { useTradeStore } from "../utils/store";
+import DayOfWeekPerformanceChart from "./DayOfWeekPerformanceChart";
 import EmotionPerformanceChart from "./EmotionPerformanceChart";
 import ScorePerformanceChart from "./ScorePerformanceChart";
 import StrategyPerformanceChart from "./StrategyPerformanceChart";
+import SymbolPerformanceChart from "./SymbolPerformanceChart";
 import TagPerformanceChart from "./TagPerformanceChart";
 
 // کامپوننت کمکی برای مدیریت محتوای هر تب
@@ -20,9 +21,7 @@ function TabPanel(props) {
     );
 }
 
-// کامپوننت آمار کلی که قبلاً داشتیم
-function OverviewStats() {
-    const trades = useTradeStore((state) => state.trades);
+function OverviewStats({ trades }) { 
     const stats = useMemo(() => {
         if (trades.length === 0) return { totalPnl: 0, winRate: 0, avgProfit: 0, avgLoss: 0 };
         const totalPnl = trades.reduce((acc, trade) => acc + trade.pnl, 0);
@@ -45,7 +44,7 @@ function OverviewStats() {
 }
 
 
-export default function AnalyticsDashboard() {
+export default function AnalyticsDashboard({trades}) {
     const [activeTab, setActiveTab] = useState(0);
 
     const handleTabChange = (event, newValue) => {
@@ -61,10 +60,12 @@ export default function AnalyticsDashboard() {
                     <Tab label="تحلیل عملکرد اجرایی" />
                     <Tab label="تحلیل برچسب‌ها" />
                     <Tab label="تحلیل استراتژی" /> 
+                    <Tab label="تحلیل نمادها" />
+                    <Tab label="تحلیل روز هفته" />
                 </Tabs>
             </Box>
             <TabPanel value={activeTab} index={0}>
-                <OverviewStats />
+                <OverviewStats trades={trades} />
             </TabPanel>
             <TabPanel value={activeTab} index={1}>
                 <EmotionPerformanceChart />
@@ -77,6 +78,12 @@ export default function AnalyticsDashboard() {
             </TabPanel>
             <TabPanel value={activeTab} index={4}>
                 <StrategyPerformanceChart />
+            </TabPanel>
+            <TabPanel value={activeTab} index={5}>
+                <SymbolPerformanceChart />
+            </TabPanel>
+            <TabPanel value={activeTab} index={6}>
+                <DayOfWeekPerformanceChart />
             </TabPanel>
         </Paper>
     );

@@ -1,22 +1,21 @@
-import { AddCircleOutline, Delete, Edit, RateReview, UploadFile } from '@mui/icons-material'; // RateReview اضافه شد
+import { AddCircleOutline, Delete, Edit, RateReview, UploadFile } from '@mui/icons-material';
 import {
-    Box, Button, Chip, Container, createTheme, CssBaseline, IconButton, Paper, Table, TableBody,
-    TableCell, TableContainer, TablePagination, TableRow, ThemeProvider, Typography
-} from '@mui/material'; // Chip اضافه شد
+    Autocomplete, Box, Button, Chip, Container, createTheme, CssBaseline, IconButton, Paper, Table, TableBody,
+    TableCell, TableContainer, TablePagination, TableRow, TextField, ThemeProvider, Typography
+} from '@mui/material';
 import { format } from 'date-fns';
 import { useEffect, useMemo, useState } from 'react';
 
-import ChecklistModal from '@/app/components/checklistmodal'; // مودال جدید
+import ChecklistModal from '@/app/components/checklistmodal';
 import DashboardStats from '@/app/components/dashboardstate';
 import EquityCurveChart from '@/app/components/equitycurvechart';
 import EnhancedTableHead from '@/app/components/table';
 import AddTradeModal from '@/app/components/trademodal';
 import { useConveyor } from '@/app/hooks/use-conveyor';
-import { Trade, useTradeStore } from '@/app/utils/store'; // Trade type اضافه شد
+import { Trade, useTradeStore } from '@/app/utils/store';
 import { getComparator, stableSort } from '@/app/utils/tablelogic';
 
-
-const darkTheme = createTheme({ 
+const darkTheme = createTheme({
     palette: {
         mode: 'dark',
         primary: { main: '#90caf9' },
@@ -32,28 +31,41 @@ const darkTheme = createTheme({
 export default function App() {
     const [addModalOpen, setAddModalOpen] = useState(false);
     const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
-    const { trades, setTrades, addTrade, deleteTrade, importTrades ,updateTrade} = useTradeStore();
+    const { trades, setTrades, deleteTrade } = useTradeStore();
     const fileApi = useConveyor('file');
     const databaseApi = useConveyor('database');
     const [order, setOrder] = useState('desc');
     const [orderBy, setOrderBy] = useState('entryDate');
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
-
     const [checklistModalOpen, setChecklistModalOpen] = useState(false);
     const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
+    const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
 
+    // فیلتر کردن معاملات بر اساس نماد انتخاب شده
+    const filteredTrades = useMemo(() => {
+        if (!selectedSymbol) {
+            return trades;
+        }
+        return trades.filter(trade => trade.symbol === selectedSymbol);
+    }, [trades, selectedSymbol]);
 
-        const handleOpenAddModal = () => {
-            setEditingTrade(null); // اطمینان از اینکه در حالت افزودن هستیم
-            setAddModalOpen(true);
-        };
-    
-        const handleOpenEditModal = (trade: Trade) => {
-            setEditingTrade(trade);
-            setAddModalOpen(true);
-        };
-    
+    // ایجاد لیست نمادهای منحصر به فرد برای فیلتر
+    const uniqueSymbols = useMemo(() => {
+        const symbols = trades.map(trade => trade.symbol);
+        return [...new Set(symbols)];
+    }, [trades]);
+
+    const handleOpenAddModal = () => {
+        setEditingTrade(null);
+        setAddModalOpen(true);
+    };
+
+    const handleOpenEditModal = (trade: Trade) => {
+        setEditingTrade(trade);
+        setAddModalOpen(true);
+    };
+
     const handleOpenChecklistModal = (trade: Trade) => {
         setSelectedTrade(trade);
         setChecklistModalOpen(true);
@@ -64,20 +76,15 @@ export default function App() {
         setSelectedTrade(null);
     };
 
-
     const handleImportClick = async () => {
-        // ۱. خواندن معاملات از فایل متاتریدر
         const importedTrades = await fileApi.readTradesFromDb();
         if (importedTrades && importedTrades.length > 0) {
-            // ۲. ارسال معاملات خوانده شده به بک‌اند برای ذخیره‌سازی دسته‌جمعی
             const allTradesFromDb = await databaseApi.bulkAddTrades(importedTrades);
-    
-            // ۳. به‌روزرسانی کامل رابط کاربری با لیست جدید از دیتابیس
             setTrades(allTradesFromDb);
         }
     };
 
-    const handleRequestSort = (event, property) => { 
+    const handleRequestSort = (event, property) => {
         const isAsc = orderBy === property && order === 'asc';
         setOrder(isAsc ? 'desc' : 'asc');
         setOrderBy(property);
@@ -89,27 +96,23 @@ export default function App() {
     };
 
     const handleDeleteTrade = async (id: number) => {
-        await databaseApi.deleteTrade(id); // 1. حذف از دیتابیس
-        deleteTrade(id);                  // 2. حذف از رابط کاربری (store)
+        await databaseApi.deleteTrade(id);
+        deleteTrade(id);
     };
-    
 
-    const sortedTrades = useMemo(() => stableSort(trades, getComparator(order, orderBy)), [trades, order, orderBy]);
+    const sortedTrades = useMemo(() => stableSort(filteredTrades, getComparator(order, orderBy)), [filteredTrades, order, orderBy]);
 
-useEffect(() => {
-    const loadInitialData = async () => {
-        console.log("Loading initial trades from database...");
-        const initialTrades = await databaseApi.loadTrades();
-        setTrades(initialTrades);
-        console.log(`${initialTrades.length} trades loaded.`);
-    };
-    // اطمینان حاصل می‌کنیم که conveyor آماده است
-    if (window.conveyor) {
-       loadInitialData();
-    }
-}, [databaseApi, setTrades]);
-
-
+    useEffect(() => {
+        const loadInitialData = async () => {
+            console.log("Loading initial trades from database...");
+            const initialTrades = await databaseApi.loadTrades();
+            setTrades(initialTrades);
+            console.log(`${initialTrades.length} trades loaded.`);
+        };
+        if (window.conveyor) {
+            loadInitialData();
+        }
+    }, [databaseApi, setTrades]);
 
     return (
         <ThemeProvider theme={darkTheme}>
@@ -117,7 +120,17 @@ useEffect(() => {
             <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
                     <Typography variant="h4" component="h1">ژورنال معاملاتی</Typography>
-                    <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Autocomplete
+                          options={uniqueSymbols}
+                          value={selectedSymbol}
+                          onChange={(event, newValue) => {
+                            setSelectedSymbol(newValue);
+                          }}
+                          renderInput={(params) => <TextField {...params} label="فیلتر نماد" size="small" />}
+                          sx={{ width: 200 }}
+                          disableClearable={!selectedSymbol}
+                        />
                         <Button variant="outlined" startIcon={<UploadFile />} onClick={handleImportClick}>
                             بارگذاری از متاتریدر 5
                         </Button>
@@ -126,9 +139,10 @@ useEffect(() => {
                         </Button>
                     </Box>
                 </Box>
-
-                <DashboardStats />
-                <EquityCurveChart />
+                
+                {/* پاس دادن معاملات فیلتر شده به کامپوننت‌ها */}
+                <DashboardStats trades={filteredTrades} />
+                <EquityCurveChart trades={filteredTrades} />
 
                 <Paper sx={{ width: '100%', mb: 2, backgroundColor: '#1e1e1e', border: '1px solid #333' }}>
                     <TableContainer>
@@ -144,11 +158,10 @@ useEffect(() => {
                                         <TableCell align="right">{row.volume}</TableCell>
                                         <TableCell align="right"><Typography color={row.pnl >= 0 ? 'success.main' : 'error.main'} sx={{ fontWeight: 'bold' }}>${row.pnl.toFixed(2)}</Typography></TableCell>
                                         <TableCell>{row.strategy}</TableCell>
-                                        {/* ستون جدید برای بازبینی */}
                                         <TableCell>
                                             {row.checklist ? (
-                                                <Chip 
-                                                    label={`${row.checklist.executionScore} ★`} 
+                                                <Chip
+                                                    label={`${row.checklist.executionScore} ★`}
                                                     onClick={() => handleOpenChecklistModal(row)}
                                                     size="small"
                                                     variant="outlined"
@@ -160,15 +173,13 @@ useEffect(() => {
                                                 </IconButton>
                                             )}
                                         </TableCell>
-
                                         <TableCell sx={{ maxWidth: 200 }}>
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-        {row.tags?.map(tag => (
-            <Chip key={tag} label={tag} size="small" />
-        ))}
-    </Box>
-</TableCell>
-
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                {row.tags?.map(tag => (
+                                                    <Chip key={tag} label={tag} size="small" />
+                                                ))}
+                                            </Box>
+                                        </TableCell>
                                         <TableCell>
                                             <IconButton size="small" onClick={() => handleOpenEditModal(row)}><Edit fontSize="inherit" /></IconButton>
                                             <IconButton size="small" onClick={() => handleDeleteTrade(row.id)}><Delete fontSize="inherit" /></IconButton>
@@ -179,16 +190,16 @@ useEffect(() => {
                         </Table>
                     </TableContainer>
                     <TablePagination
-                        rowsPerPageOptions={[5, 10, 25]} component="div" count={trades.length}
+                        rowsPerPageOptions={[5, 10, 25]} component="div" count={filteredTrades.length}
                         rowsPerPage={rowsPerPage} page={page} onPageChange={handleChangePage}
                         onRowsPerPageChange={handleChangeRowsPerPage} labelRowsPerPage="تعداد در صفحه"
                     />
                 </Paper>
-                
-                <AddTradeModal 
-                    open={addModalOpen} 
-                    handleClose={() => setAddModalOpen(false)} 
-                    tradeToEdit={editingTrade} 
+
+                <AddTradeModal
+                    open={addModalOpen}
+                    handleClose={() => setAddModalOpen(false)}
+                    tradeToEdit={editingTrade}
                 />
                 <ChecklistModal open={checklistModalOpen} handleClose={handleCloseChecklistModal} trade={selectedTrade} />
 
@@ -196,4 +207,3 @@ useEffect(() => {
         </ThemeProvider>
     );
 }
-

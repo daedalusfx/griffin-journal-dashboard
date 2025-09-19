@@ -1,12 +1,10 @@
-import { useTradeStore } from "@/app/utils/store"; // تصحیح شد: استفاده از آدرس مطلق
 import { Paper, Typography } from "@mui/material";
 import { format } from "date-fns";
 import { useMemo } from "react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 // کامپوننت جدید برای نمودار عملکرد
-function EquityCurveChart() {
-    const trades = useTradeStore((state) => state.trades);
+function EquityCurveChart({trades}) {
 
     const chartData = useMemo(() => {
         if (trades.length === 0) return [];
