@@ -46,15 +46,15 @@ export const ChecklistFields = ({ control }) => (
             </FormControl>
         </Grid>
         <Grid item xs={12}>
-             <Controller
+            <Controller
                 name="checklist.notes"
                 control={control}
                 defaultValue=""
                 render={({ field }) => (
-                    <TextField 
-                        {...field} 
-                        label="یادداشت" 
-                        fullWidth 
+                    <TextField
+                        {...field}
+                        label="یادداشت"
+                        fullWidth
                         multiline
                         rows={3}
                     />
@@ -65,52 +65,52 @@ export const ChecklistFields = ({ control }) => (
 );
 
 
-export default function AddTradeModal({ open, handleClose,tradeToEdit }) { 
-    const { handleSubmit, control, reset } = useForm();     
+export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
+    const { handleSubmit, control, reset } = useForm();
     const addTrade = useTradeStore((state) => state.addTrade);
-const updateTrade = useTradeStore((state) => state.updateTrade);
+    const updateTrade = useTradeStore((state) => state.updateTrade);
     const databaseApi = useConveyor('database');
     const isEditMode = !!tradeToEdit;
-// In app/components/trademodal.tsx
+    // In app/components/trademodal.tsx
 
-const onSubmit = async (data) => {
-    // This PNL calculation is a bit simplified and might not be what you want.
-    // Let's assume you handle PNL on the backend or have a better calculation.
-    // For now, we focus on the date fix.
-    
-    if (isEditMode) {
-        const tradePayload = {
-            ...tradeToEdit,
-            ...data,
-            // The PNL should likely be recalculated or handled differently
-            pnl: tradeToEdit.pnl, // Keep original PNL unless prices change
-            tags: data.tags || [],
-            // --- START: THE FIX ---
-            // Convert Date objects back to ISO strings before sending
-            entryDate: new Date(tradeToEdit.entryDate).toISOString(),
-            exitDate: new Date(tradeToEdit.exitDate).toISOString(),
-            // --- END: THE FIX ---
-        };
-        const updatedTradeFromDb = await databaseApi.updateTrade(tradePayload);
-        updateTrade(updatedTradeFromDb);
-    } else {
-        const pnl = (data.type === 'Buy' ? 1 : -1) * (data.exitPrice - data.entryPrice) * data.volume;
-        const tradePayload = {
-            ...data,
-            pnl: parseFloat(pnl) || 0,
-            // When creating a new trade, ensure dates are strings
-            entryDate: new Date().toISOString(),
-            exitDate: new Date().toISOString(),
-            tags: data.tags || [],
-        };
-        const newTradeWithId = await databaseApi.addTrade(tradePayload);
-        addTrade(newTradeWithId);
-    }
+    const onSubmit = async (data) => {
+        // This PNL calculation is a bit simplified and might not be what you want.
+        // Let's assume you handle PNL on the backend or have a better calculation.
+        // For now, we focus on the date fix.
 
-    handleClose();
-};
+        if (isEditMode) {
+            const tradePayload = {
+                ...tradeToEdit,
+                ...data,
+                // The PNL should likely be recalculated or handled differently
+                pnl: tradeToEdit.pnl, // Keep original PNL unless prices change
+                tags: data.tags || [],
+                // --- START: THE FIX ---
+                // Convert Date objects back to ISO strings before sending
+                entryDate: new Date(tradeToEdit.entryDate).toISOString(),
+                exitDate: new Date(tradeToEdit.exitDate).toISOString(),
+                // --- END: THE FIX ---
+            };
+            const updatedTradeFromDb = await databaseApi.updateTrade(tradePayload);
+            updateTrade(updatedTradeFromDb);
+        } else {
+            const pnl = (data.type === 'Buy' ? 1 : -1) * (data.exitPrice - data.entryPrice) * data.volume;
+            const tradePayload = {
+                ...data,
+                pnl: parseFloat(pnl) || 0,
+                // When creating a new trade, ensure dates are strings
+                entryDate: new Date().toISOString(),
+                exitDate: new Date().toISOString(),
+                tags: data.tags || [],
+            };
+            const newTradeWithId = await databaseApi.addTrade(tradePayload);
+            addTrade(newTradeWithId);
+        }
+
+        handleClose();
+    };
     useEffect(() => {
-        if (open) { 
+        if (open) {
             if (isEditMode) {
                 reset({
                     symbol: tradeToEdit.symbol,
@@ -130,59 +130,69 @@ const onSubmit = async (data) => {
                 });
             }
         }
-    }, [tradeToEdit, open]); 
+    }, [tradeToEdit, open]);
 
     return (
         <Modal open={open} onClose={handleClose}>
-            <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 450, bgcolor: 'background.paper', border: '1px solid #444', boxShadow: 24, p: 4, borderRadius: 2 }}>
+            <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'max-content', bgcolor: 'background.paper', border: '1px solid #444', boxShadow: 24, p: 4, borderRadius: 2 }}>
                 <Typography variant="h6" component="h2" mb={2}>
                     {isEditMode ? `ویرایش معامله: ${tradeToEdit.symbol}` : 'ثبت معامله جدید'}
                 </Typography>
                 <form onSubmit={handleSubmit(onSubmit)}>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12}><Controller name="symbol" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="نماد (Symbol)" fullWidth />} /></Grid>
-                        <Grid item xs={6}><FormControl fullWidth><InputLabel>نوع</InputLabel><Controller name="type" control={control} defaultValue="Buy" render={({ field }) => (<Select {...field} label="نوع"><MenuItem value="Buy">خرید (Buy)</MenuItem><MenuItem value="Sell">فروش (Sell)</MenuItem></Select>)} /></FormControl></Grid>
-                        <Grid item xs={6}><Controller name="volume" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="حجم (Volume)" type="number" fullWidth />} /></Grid>
-                        <Grid item xs={6}><Controller name="entryPrice" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="قیمت ورود" type="number" fullWidth />} /></Grid>
-                        <Grid item xs={6}><Controller name="exitPrice" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="قیمت خروج" type="number" fullWidth />} /></Grid>
-                        <Grid item xs={12}><Controller name="strategy" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="استراتژی" fullWidth />} /></Grid>
-                        
-                        <Grid item xs={12}><Typography variant="subtitle1" mt={2}>بازبینی اولیه</Typography></Grid>
-                        <ChecklistFields control={control} />
-                        
-                        {/* فیلد برچسب‌ها */}
-                        <Grid item xs={12}>
-                            <Controller
-                                name="tags"
-                                control={control}
-                                defaultValue={[]}
-                                render={({ field: { onChange, value } }) => (
-                                    <Autocomplete
-                                        multiple
-                                        freeSolo
-                                        options={[]}
-                                        value={value || []}
-                                        onChange={(event, newValue) => {
-                                            onChange(newValue);
-                                        }}
-                                        renderInput={(params) => (
-                                            <TextField
-                                                {...params}
-                                                variant="standard"
-                                                label="برچسب‌ها"
-                                                placeholder="یک برچسب تایپ کنید و Enter بزنید"
-                                            />
-                                        )}
-                                    />
-                                )}
-                            />
-                        </Grid>
+                    <Grid container spacing={2} sx={{ display: 'flex', flexDirection: 'row' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-                        <Grid item xs={12} mt={2}>
-                            <Button type="submit" variant="contained" color="primary" fullWidth>
-                               {isEditMode ? 'ذخیره تغییرات' : 'ثبت معامله'}
-                           </Button>
+                            <Grid item xs={12}><Controller name="symbol" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="نماد (Symbol)" fullWidth />} /></Grid>
+                            <Grid item xs={6}><FormControl fullWidth><InputLabel>نوع</InputLabel><Controller name="type" control={control} defaultValue="Buy" render={({ field }) => (<Select {...field} label="نوع"><MenuItem value="Buy">خرید (Buy)</MenuItem><MenuItem value="Sell">فروش (Sell)</MenuItem></Select>)} /></FormControl></Grid>
+                            <Grid item xs={6}><Controller name="volume" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="حجم (Volume)" type="number" fullWidth />} /></Grid>
+                            <Grid item xs={6}><Controller name="entryPrice" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="قیمت ورود" type="number" fullWidth />} /></Grid>
+                            <Grid item xs={6}><Controller name="exitPrice" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="قیمت خروج" type="number" fullWidth />} /></Grid>
+                            <Grid item xs={12}><Controller name="strategy" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="استراتژی" fullWidth />} /></Grid>
+                        </div>
+
+
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <Grid item xs={12}><Typography variant="subtitle1" mt={2}>بازبینی اولیه</Typography></Grid>
+                            <ChecklistFields control={control} />
+
+                        </div>
+
+                        <div style={{ width: "100%" }}>
+
+                            <Grid item xs={12}>
+                                <Controller
+                                    name="tags"
+                                    control={control}
+                                    defaultValue={[]}
+                                    render={({ field: { onChange, value } }) => (
+                                        <Autocomplete
+                                            multiple
+                                            freeSolo
+                                            options={[]}
+                                            value={value || []}
+                                            onChange={(event, newValue) => {
+                                                onChange(newValue);
+                                            }}
+                                            renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    variant="standard"
+                                                    label="برچسب‌ها"
+                                                    placeholder="یک برچسب تایپ کنید و Enter بزنید"
+                                                />
+                                            )}
+                                        />
+                                    )}
+                                />
                             </Grid>
+                        </div>
+
+                    </Grid>
+                    <Grid item xs={12} mt={2}>
+                        <Button type="submit" variant="contained" color="primary" fullWidth>
+                            {isEditMode ? 'ذخیره تغییرات' : 'ثبت معامله'}
+                        </Button>
                     </Grid>
                 </form>
             </Box>
