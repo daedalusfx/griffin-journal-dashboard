@@ -77,10 +77,10 @@ export default function ChecklistModal({ open, handleClose, trade }: ChecklistMo
 
     return (
         <Modal open={open} onClose={handleClose}>
-            <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 450, bgcolor: 'background.paper', border: '1px solid #444', boxShadow: 24, p: 4, borderRadius: 2 }}>
+            <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'max-content', bgcolor: 'background.paper', border: '1px solid #444', boxShadow: 24, p: 4, borderRadius: 2 }}>
                 <Typography variant="h6" component="h2" mb={2}>بازبینی معامله: {trade.symbol}</Typography>
                 <form onSubmit={handleSubmit(onSubmit)}>
-                    <Grid container spacing={3}>
+                    <Grid container spacing={3} sx={{display:'flex',flexDirection:'column',width:'max-content'}}>
                         <Grid item xs={12}>
                             <Controller
                                 name="strategy"
