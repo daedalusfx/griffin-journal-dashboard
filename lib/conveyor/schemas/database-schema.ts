@@ -1,43 +1,47 @@
-
 import { z } from 'zod';
 
+// این schema کامل و نهایی است
 const tradeSchema = z.object({
     id: z.number().optional(),
     symbol: z.string(),
     type: z.string(),
     volume: z.number(),
     pnl: z.number(),
-    entryDate: z.string(),
+    entryDate: z.string(), // تاریخ‌ها همیشه به صورت رشته ارسال می‌شوند
     exitDate: z.string(),
-    strategy: z.string().optional(),
-    commission: z.number().optional(),
-    swap: z.number().optional(),
-    entryPrice: z.number().optional(),
-    exitPrice: z.number().optional(),
+    strategy: z.string().optional().nullable(),
+    commission: z.number().optional().nullable(),
+    swap: z.number().optional().nullable(),
+    entryPrice: z.number().optional().nullable(),
+    exitPrice: z.number().optional().nullable(),
     checklist: z.object({
         emotion: z.string(),
         executionScore: z.number(),
         notes: z.string().optional(),
-    }).nullable().optional(), // <--- تغییر در این خط
-    tags: z.array(z.string()).optional(),
+    }).nullable().optional(),
+    tags: z.array(z.string()).optional().nullable(),
     attachments: z.array(z.string()).optional().nullable(),
+    // --- فیلدهای جدید و نهایی ---
+    riskRewardRatio: z.string().optional().nullable(),
+    timeframe: z.string().optional().nullable(),
+    accountType: z.string().optional().nullable(),
+    outcome: z.string().optional().nullable(),
+    chartLinks: z.array(z.string()).optional().nullable(),
 });
-
 
 const dailyLogSchema = z.object({
-  date: z.string(),
-  pre_market_focus: z.number(),
-  pre_market_preparation: z.number(),
-  mindfulness_state: z.string(),
-  adherence_to_rules: z.number(),
-  impulsive_trades_count: z.number(),
-  hesitation_on_entry: z.number(),
-  premature_exit_count: z.number(),
-  post_market_review_quality: z.number(),
-  emotional_state_after: z.string(),
-  daily_lesson_learned: z.string(),
+    date: z.string(),
+    pre_market_focus: z.number(),
+    pre_market_preparation: z.number(),
+    mindfulness_state: z.string(),
+    adherence_to_rules: z.number(),
+    impulsive_trades_count: z.number(),
+    hesitation_on_entry: z.number(),
+    premature_exit_count: z.number(),
+    post_market_review_quality: z.number(),
+    emotional_state_after: z.string(),
+    daily_lesson_learned: z.string(),
 });
-
 
 
 export const databaseIpcSchema = {
@@ -62,16 +66,15 @@ export const databaseIpcSchema = {
     return: z.array(tradeSchema),
   },
   'db-add-attachment': {
-    args: z.tuple([z.number(), z.string()]), // tradeId, attachmentName
+    args: z.tuple([z.number(), z.string()]),
     return: z.void(),
   },
   'db-update-trade': {
-    args: z.tuple([tradeSchema]), // یک آبجکت کامل معامله را دریافت می‌کند
-    return: tradeSchema,          // معامله آپدیت شده را برمی‌گرداند
+    args: z.tuple([tradeSchema]),
+    return: tradeSchema,
   },
   'db-save-daily-log': {
     args: z.tuple([dailyLogSchema]),
     return: z.void(),
-},
-
+  },
 }

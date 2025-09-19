@@ -164,6 +164,10 @@ export default function App() {
                                         <TableCell align="right">{row.volume}</TableCell>
                                         <TableCell align="right"><Typography color={row.pnl >= 0 ? 'success.main' : 'error.main'} sx={{ fontWeight: 'bold' }}>${row.pnl.toFixed(2)}</Typography></TableCell>
                                         <TableCell>{row.strategy}</TableCell>
+                                        <TableCell>{row.riskRewardRatio}</TableCell>
+                                        <TableCell>{row.timeframe}</TableCell>
+                                        <TableCell>{row.accountType}</TableCell>
+                                        <TableCell>{row.outcome}</TableCell>
                                         <TableCell>
                                             {row.checklist ? (
                                                 <Chip

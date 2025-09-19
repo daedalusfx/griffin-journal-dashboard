@@ -24,6 +24,12 @@ export interface Trade {
   checklist?: TradeChecklist; 
   tags?: string[];
   attachments?: string[]; 
+  riskRewardRatio?: string; // e.g., "1:2.5"
+  timeframe?: string; // e.g., "M15", "H1"
+  accountType?: 'Real' | 'Demo';
+  outcome?: 'TP' | 'SL' | 'BE' | 'Manual Close';
+  chartLinks?: string[]; // آرایه‌ای از لینک‌های TradingView
+
 }
 
 

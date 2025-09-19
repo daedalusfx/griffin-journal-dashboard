@@ -73,23 +73,17 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
     const isEditMode = !!tradeToEdit;
     // In app/components/trademodal.tsx
 
-    const onSubmit = async (data) => {
-        // This PNL calculation is a bit simplified and might not be what you want.
-        // Let's assume you handle PNL on the backend or have a better calculation.
-        // For now, we focus on the date fix.
 
+    const onSubmit = async (data) => {
         if (isEditMode) {
             const tradePayload = {
                 ...tradeToEdit,
                 ...data,
-                // The PNL should likely be recalculated or handled differently
-                pnl: tradeToEdit.pnl, // Keep original PNL unless prices change
+                pnl: tradeToEdit.pnl,
                 tags: data.tags || [],
-                // --- START: THE FIX ---
-                // Convert Date objects back to ISO strings before sending
+                chartLinks: data.chartLinks ? data.chartLinks.split(',').map(link => link.trim()) : [],
                 entryDate: new Date(tradeToEdit.entryDate).toISOString(),
                 exitDate: new Date(tradeToEdit.exitDate).toISOString(),
-                // --- END: THE FIX ---
             };
             const updatedTradeFromDb = await databaseApi.updateTrade(tradePayload);
             updateTrade(updatedTradeFromDb);
@@ -98,17 +92,17 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
             const tradePayload = {
                 ...data,
                 pnl: parseFloat(pnl) || 0,
-                // When creating a new trade, ensure dates are strings
                 entryDate: new Date().toISOString(),
                 exitDate: new Date().toISOString(),
                 tags: data.tags || [],
+                chartLinks: data.chartLinks ? data.chartLinks.split(',').map(link => link.trim()) : [],
             };
             const newTradeWithId = await databaseApi.addTrade(tradePayload);
             addTrade(newTradeWithId);
         }
-
         handleClose();
     };
+
     useEffect(() => {
         if (open) {
             if (isEditMode) {
@@ -120,17 +114,27 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
                     exitPrice: tradeToEdit.exitPrice,
                     strategy: tradeToEdit.strategy,
                     checklist: tradeToEdit.checklist || { emotion: 'نامشخص', executionScore: 3, notes: '' },
-                    tags: tradeToEdit.tags || []
+                    tags: tradeToEdit.tags || [],
+                    riskRewardRatio: tradeToEdit.riskRewardRatio || '',
+                    timeframe: tradeToEdit.timeframe || '',
+                    accountType: tradeToEdit.accountType || 'Real',
+                    outcome: tradeToEdit.outcome || 'Manual Close',
+                    chartLinks: tradeToEdit.chartLinks ? tradeToEdit.chartLinks.join(', ') : '',
                 });
             } else {
                 reset({
                     symbol: '', volume: '', entryPrice: '', exitPrice: '', strategy: '',
                     checklist: { emotion: 'نامشخص', executionScore: 3, notes: '' },
-                    tags: []
+                    tags: [],
+                    riskRewardRatio: '',
+                    timeframe: '',
+                    accountType: 'Real',
+                    outcome: 'Manual Close',
+                    chartLinks: '',
                 });
             }
         }
-    }, [tradeToEdit, open]);
+    }, [tradeToEdit, open, reset]);
 
     return (
         <Modal open={open} onClose={handleClose}>
@@ -139,7 +143,7 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
                     {isEditMode ? `ویرایش معامله: ${tradeToEdit.symbol}` : 'ثبت معامله جدید'}
                 </Typography>
                 <form onSubmit={handleSubmit(onSubmit)}>
-                    <Grid container spacing={2} sx={{ display: 'flex', flexDirection: 'row' }}>
+                    <Grid container spacing={2} sx={{ display: 'flex', flexDirection: 'row',alignItems:'flex-start',alignContent:'center',justifyContent:'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
                             <Grid item xs={12}><Controller name="symbol" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="نماد (Symbol)" fullWidth />} /></Grid>
@@ -151,6 +155,34 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
                         </div>
 
 
+                        <Grid item xs={12} md={4} sx={{width:'20%'}}>
+                            <Typography variant="subtitle1" mt={2}>جزئیات تکمیلی</Typography>
+                            <Controller name="riskRewardRatio" control={control} render={({ field }) => <TextField {...field} label="نسبت ریسک به ریوارد" fullWidth margin="normal" />} />
+                            <Controller name="timeframe" control={control} render={({ field }) => <TextField {...field} label="تایم فریم" fullWidth margin="normal" />} />
+                            <FormControl fullWidth margin="normal">
+                                <InputLabel>نوع حساب</InputLabel>
+                                <Controller name="accountType" control={control} defaultValue="Real" render={({ field }) => (
+                                    <Select {...field} label="نوع حساب">
+                                        <MenuItem value="Real">واقعی (Real)</MenuItem>
+                                        <MenuItem value="Demo">آزمایشی (Demo)</MenuItem>
+                                    </Select>
+                                )} />
+                            </FormControl>
+                             <FormControl fullWidth margin="normal">
+                                <InputLabel>نتیجه معامله</InputLabel>
+                                <Controller name="outcome" control={control} defaultValue="Manual Close" render={({ field }) => (
+                                    <Select {...field} label="نتیجه معامله">
+                                        <MenuItem value="TP">حد سود (TP)</MenuItem>
+                                        <MenuItem value="SL">حد ضرر (SL)</MenuItem>
+                                        <MenuItem value="BE">سر به سر (BE)</MenuItem>
+                                        <MenuItem value="Manual Close">بستن دستی</MenuItem>
+                                    </Select>
+                                )} />
+                            </FormControl>
+                             <Controller name="chartLinks" control={control} render={({ field }) => <TextField {...field} label="لینک چارت (با کاما جدا کنید)" fullWidth margin="normal" />} />
+                        </Grid>
+
+
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             <Grid item xs={12}><Typography variant="subtitle1" mt={2}>بازبینی اولیه</Typography></Grid>
@@ -158,7 +190,7 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
 
                         </div>
 
-                        <div style={{ width: "100%" }}>
+                        <div style={{ width: "15%" }}>
 
                             <Grid item xs={12}>
                                 <Controller

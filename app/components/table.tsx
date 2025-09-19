@@ -4,10 +4,15 @@ import { TableCell, TableHead, TableRow, TableSortLabel } from "@mui/material";
     { id: 'symbol', label: 'نماد' }, { id: 'type', label: 'نوع' }, { id: 'entryDate', label: 'تاریخ ورود' },
     { id: 'exitDate', label: 'تاریخ خروج' }, { id: 'volume', label: 'حجم', numeric: true }, { id: 'pnl', label: 'سود / زیان', numeric: true },
     { id: 'strategy', label: 'استراتژی' },
+    { id: 'riskRewardRatio', label: 'ریسک/ریوارد' },
+    { id: 'timeframe', label: 'تایم فریم' },
+    { id: 'accountType', label: 'نوع حساب' },
+    { id: 'outcome', label: 'نتیجه' },
     { id: 'checklist', label: 'بازبینی' }, // ستون جدید
     { id: 'actions', label: 'عملیات' },
     { id: 'tags', label: 'برچسب‌ها' }
   ];
+
   function EnhancedTableHead(props) {
     const { order, orderBy, onRequestSort } = props;
     const createSortHandler = (property) => (event) => { onRequestSort(event, property); };
