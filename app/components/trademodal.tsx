@@ -1,9 +1,35 @@
 import { useConveyor } from "@/app/hooks/use-conveyor";
 import { useTradeStore } from "@/app/utils/store";
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Autocomplete, Box, Button, Chip, FormControl, Grid, InputLabel, MenuItem, Modal, Select, TextField, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import toast from 'react-hot-toast';
+import { z } from "zod";
+
+
+const tradeFormSchema = z.object({
+    symbol: z.string().min(1, 'نماد معاملاتی اجباری است.'),
+    type: z.string(),
+    volume: z.coerce.number({ invalid_type_error: 'حجم باید عدد باشد.' }).positive('حجم باید عددی مثبت باشد.'),
+    entryPrice: z.coerce.number({ invalid_type_error: 'قیمت باید عدد باشد.' }).positive('قیمت ورود باید عددی مثبت باشد.'),
+    exitPrice: z.coerce.number({ invalid_type_error: 'قیمت باید عدد باشد.' }).positive('قیمت خروج باید عددی مثبت باشد.'),
+    strategy: z.string().optional(),
+    timeframe: z.string().optional(),
+    riskRewardRatio: z.string().optional(),
+    accountType: z.string().optional(),
+    outcome: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    chartLinks: z.string().optional(),
+    // فیلدهای چک‌لیست نیازی به اعتبارسنجی اجباری ندارند
+    checklist: z.object({
+        emotion: z.string(),
+        executionScore: z.number(),
+        notes: z.string().optional(),
+    }).optional(),
+});
+
+
 
 export const ChecklistFields = ({ control }) => (
     <>
@@ -66,7 +92,22 @@ export const ChecklistFields = ({ control }) => (
 
 
 export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
-    const { handleSubmit, control, reset } = useForm();
+    const { handleSubmit, control, reset, formState: { errors } } = useForm({
+        resolver: zodResolver(tradeFormSchema),
+        // مقادیر پیش‌فرض برای جلوگیری از خطای uncontrolled input
+        defaultValues: {
+            symbol: '',
+            type: 'Buy',
+            volume: '',
+            entryPrice: '',
+            exitPrice: '',
+            strategy: '',
+            timeframe: '',
+            riskRewardRatio: '',
+            tags: [],
+        }
+    });
+
     const addTrade = useTradeStore((state) => state.addTrade);
     const updateTrade = useTradeStore((state) => state.updateTrade);
     const databaseApi = useConveyor('database');
@@ -177,19 +218,27 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
 
                                 <Controller name="symbol" control={control} defaultValue="" render={({ field: { onChange, value } }) => (
                                     <Autocomplete freeSolo options={autocompleteOptions.symbol} value={value || ''} onChange={(e, val) => onChange(val)}
-                                        renderInput={(params) => <TextField {...params} label="نماد (Symbol)" fullWidth />}
+                                        renderInput={(params) => <TextField {...params} label="نماد (Symbol)" fullWidth 
+                                        error={!!errors.symbol}
+                                        helperText={errors.symbol?.message}
+                                        
+                                        />}
                                     />
                                 )} />
 
                             </Grid>
                             <Grid item xs={6}><FormControl fullWidth><InputLabel>نوع</InputLabel><Controller name="type" control={control} defaultValue="Buy" render={({ field }) => (<Select {...field} label="نوع"><MenuItem value="Buy">خرید (Buy)</MenuItem><MenuItem value="Sell">فروش (Sell)</MenuItem></Select>)} /></FormControl></Grid>
-                            <Grid item xs={6}><Controller name="volume" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="حجم (Volume)" type="number" fullWidth />} /></Grid>
-                            <Grid item xs={6}><Controller name="entryPrice" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="قیمت ورود" type="number" fullWidth />} /></Grid>
-                            <Grid item xs={6}><Controller name="exitPrice" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="قیمت خروج" type="number" fullWidth />} /></Grid>
+                            <Grid item xs={6}><Controller name="volume" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="حجم (Volume)" type="number" fullWidth   error={!!errors.volume}
+                                        helperText={errors.volume?.message} />} /></Grid>
+                            <Grid item xs={6}><Controller name="entryPrice" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="قیمت ورود" type="number" fullWidth                                         error={!!errors.entryPrice}
+                                        helperText={errors.entryPrice?.message} />} /></Grid>
+                            <Grid item xs={6}><Controller name="exitPrice" control={control} defaultValue="" render={({ field }) => <TextField {...field} label="قیمت خروج" type="number" fullWidth    error={!!errors.exitPrice}
+                                        helperText={errors.exitPrice?.message} />} /></Grid>
                             <Grid item xs={12}>
                                 <Controller name="strategy" control={control} defaultValue="" render={({ field: { onChange, value } }) => (
                                     <Autocomplete freeSolo options={autocompleteOptions.strategy} value={value || ''} onChange={(e, val) => onChange(val)}
-                                        renderInput={(params) => <TextField {...params} label="استراتژی" fullWidth />}
+                                        renderInput={(params) => <TextField {...params} label="استراتژی" fullWidth    error={!!errors.strategy}
+                                        helperText={errors.strategy?.message} />}
                                     />
                                 )} />
 
@@ -203,19 +252,21 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
 
                             <Controller name="riskRewardRatio" control={control} defaultValue="" render={({ field: { onChange, value } }) => (
                                 <Autocomplete freeSolo options={autocompleteOptions.riskRewardRatio} value={value || ''} onChange={(e, val) => onChange(val)}
-                                    renderInput={(params) => <TextField {...params} label="نسبت ریسک به ریوارد" fullWidth />}
+                                    renderInput={(params) => <TextField {...params} label="نسبت ریسک به ریوارد" fullWidth    error={!!errors.riskRewardRatio}
+                                    helperText={errors.riskRewardRatio?.message} />}
                                 />
                             )} />
                             <Controller name="timeframe" control={control} defaultValue="" render={({ field: { onChange, value } }) => (
                                 <Autocomplete freeSolo options={autocompleteOptions.timeframe} value={value || ''} onChange={(e, val) => onChange(val)}
-                                    renderInput={(params) => <TextField {...params} label="تایم فریم" fullWidth />}
+                                    renderInput={(params) => <TextField {...params} label="تایم فریم" fullWidth     error={!!errors.timeframe}
+                                    helperText={errors.timeframe?.message} />}
                                 />
                             )} />
 
                             <FormControl fullWidth margin="normal">
                                 <InputLabel>نوع حساب</InputLabel>
                                 <Controller name="accountType" control={control} defaultValue="Real" render={({ field }) => (
-                                    <Select {...field} label="نوع حساب">
+                                    <Select {...field} label="نوع حساب"  error={!!errors.accountType}>
                                         <MenuItem value="Real">واقعی (Real)</MenuItem>
                                         <MenuItem value="Demo">آزمایشی (Demo)</MenuItem>
                                     </Select>
@@ -224,7 +275,7 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
                             <FormControl fullWidth margin="normal">
                                 <InputLabel>نتیجه معامله</InputLabel>
                                 <Controller name="outcome" control={control} defaultValue="Manual Close" render={({ field }) => (
-                                    <Select {...field} label="نتیجه معامله">
+                                    <Select {...field} label="نتیجه معامله" error={!!errors.outcome}>
                                         <MenuItem value="TP">حد سود (TP)</MenuItem>
                                         <MenuItem value="SL">حد ضرر (SL)</MenuItem>
                                         <MenuItem value="BE">سر به سر (BE)</MenuItem>
@@ -232,7 +283,8 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
                                     </Select>
                                 )} />
                             </FormControl>
-                            <Controller name="chartLinks" control={control} render={({ field }) => <TextField {...field} label="لینک چارت (با کاما جدا کنید)" fullWidth margin="normal" />} />
+                            <Controller name="chartLinks" control={control} render={({ field }) => <TextField {...field} label="لینک چارت (با کاما جدا کنید)" fullWidth margin="normal"    error={!!errors.chartLinks}
+                                        helperText={errors.chartLinks?.message} />} />
                         </Grid>
 
 
@@ -272,6 +324,8 @@ export default function AddTradeModal({ open, handleClose, tradeToEdit }) {
                                                     {...params}
                                                     label="برچسب‌ها"
                                                     placeholder="افزودن برچسب..."
+                                                    error={!!errors.tags}
+                                                    helperText={errors.tags?.message}
                                                 />
                                             )}
                                         />
