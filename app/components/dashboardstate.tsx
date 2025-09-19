@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import DayOfWeekPerformanceChart from "./DayOfWeekPerformanceChart";
 import EmotionPerformanceChart from "./EmotionPerformanceChart";
 import ScorePerformanceChart from "./ScorePerformanceChart";
+import SessionPerformanceChart from "./SessionPerformanceChart";
 import StrategyPerformanceChart from "./StrategyPerformanceChart";
 import SymbolPerformanceChart from "./SymbolPerformanceChart";
 import TagPerformanceChart from "./TagPerformanceChart";
@@ -62,6 +63,8 @@ export default function AnalyticsDashboard({trades}) {
                     <Tab label="تحلیل استراتژی" /> 
                     <Tab label="تحلیل نمادها" />
                     <Tab label="تحلیل روز هفته" />
+                    <Tab label="تحلیل سشن معاملاتی" />
+
                 </Tabs>
             </Box>
             <TabPanel value={activeTab} index={0}>
@@ -84,6 +87,9 @@ export default function AnalyticsDashboard({trades}) {
             </TabPanel>
             <TabPanel value={activeTab} index={6}>
                 <DayOfWeekPerformanceChart />
+            </TabPanel>
+            <TabPanel value={activeTab} index={7}>
+                <SessionPerformanceChart />
             </TabPanel>
         </Paper>
     );
